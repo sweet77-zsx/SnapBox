@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>✨ 极客级 SM2 调试中心</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/sm-crypto/dist/sm2.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: radial-gradient(circle at top left, #1e293b, #020617);
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+    }
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.02);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 900px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .header h1 {
+      font-size: 2.2rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, #38bdf8, #818cf8, #e879f9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+    .header p { color: #94a3b8; font-size: 0.95rem; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .input-group.full-width { grid-column: 1 / -1; }
+
+    label { 
+      font-size: 0.85rem; 
+      font-weight: 500; 
+      color: #cbd5e1; 
+      letter-spacing: 0.5px; 
+      display: block; 
+      position: relative;
+      height: 32px;
+      line-height: 32px;
+    }
+    
+    .badge {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      line-height: normal;
+    }
+
+    textarea {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 1rem;
+      color: #e2e8f0;
+      font-family: 'Consolas', monospace;
+      font-size: 0.9rem;
+      resize: vertical;
+      min-height: 115px;
+      transition: all 0.3s ease;
+      line-height: 1.5;
+      word-break: break-all;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #818cf8;
+      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+
+    button {
+      padding: 0.75rem 2.5rem;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      color: white;
+      box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.39);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: #f8fafc;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .btn-icon {
+      padding: 0.4rem 1rem;
+      font-size: 0.85rem;
+      border-radius: 8px;
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      line-height: normal;
+    }
+
+    .alert {
+      padding: 1rem 1.2rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+      display: none;
+      animation: fadeIn 0.3s ease;
+      border-left: 4px solid transparent;
+    }
+    .alert.error { background: rgba(239, 68, 68, 0.1); color: #fca5a5; border-color: #ef4444; }
+    .alert.success { background: rgba(34, 197, 94, 0.1); color: #86efac; border-color: #22c55e; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+  </style>
+</head>
+<body>
+  <div class="glass-panel">
+    <div class="header">
+      <h1>SM2 极客级加解密中心</h1>
+      <p>完全在本地运行，底层基于标准 sm-crypto 库，无后端依赖</p>
+    </div>
+
+    <div id="alertBox" class="alert"></div>
+
+    <div class="form-grid">
+      <div class="input-group">
+        <label>公钥 (Hex) <button class="btn-secondary btn-icon" onclick="generateKey()">生成新密钥</button></label>
+        <textarea id="pubKey" placeholder="输入 130 位 16 进制公钥（通常以 04 开头）">0475866507b1eb985a235d73e6697c7a8e113d627567662a7e4509df0d4d0cb99657b79217944bd74f5aa22e6e9e6d5c5b12968ba6c7da77fa164aea44cd6fa30d</textarea>
+      </div>
+      <div class="input-group">
+        <label>私钥 (Hex)</label>
+        <textarea id="privKey" placeholder="输入 64 位 16 进制私钥">246e8e9b081c66eb2d2995c96858506d962d7dd71f637d8828ec0b835425cb7f</textarea>
+      </div>
+
+      <div class="input-group full-width">
+        <label>
+          输入内容（明文 / 密文）
+          <span class="badge">已自动过滤所有空格和换行符，防手抖设计</span>
+        </label>
+        <textarea id="inputText" placeholder="加密时输入明文，解密时输入密文..." style="min-height: 120px;"></textarea>
+      </div>
+      
+      <div class="input-group full-width">
+        <label>处理结果 <button class="btn-secondary btn-icon" onclick="copyResult()">一键复制</button></label>
+        <textarea id="outputText" readonly placeholder="输出结果将在这里显示..." style="min-height: 120px;"></textarea>
+      </div>
+    </div>
+
+    <div class="button-group">
+      <button class="btn-primary" onclick="handleEncrypt()">🔒 加 密</button>
+      <button class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.39);" onclick="handleDecrypt()">🔓 解 密</button>
+    </div>
+  </div>
+
+  <script>
+    // 清理多余字符，防止拷贝带来的换行符影响
+    function cleanHex(str) {
+      return str.replace(/[^0-9a-fA-F]/g, '');
+    }
+
+    function showAlert(msg, type) {
+      const box = document.getElementById('alertBox');
+      box.textContent = msg;
+      box.className = 'alert ' + type;
+      box.style.display = 'block';
+      setTimeout(() => box.style.display = 'none', 3000);
+    }
+
+    function generateKey() {
+      try {
+        const keypair = sm2.generateKeyPairHex();
+        document.getElementById('pubKey').value = keypair.publicKey;
+        document.getElementById('privKey').value = keypair.privateKey;
+        showAlert('✅ 密钥对生成成功！', 'success');
+      } catch (e) {
+        showAlert('❌ 生成失败: ' + e.message, 'error');
+      }
+    }
+
+    function copyResult() {
+      const output = document.getElementById('outputText');
+      if (!output.value) return;
+      navigator.clipboard.writeText(output.value).then(() => {
+        showAlert('✅ 结果已复制到剪贴板！', 'success');
+      });
+    }
+
+    function handleEncrypt() {
+      try {
+        const text = document.getElementById('inputText').value;
+        let pubKey = cleanHex(document.getElementById('pubKey').value);
+        if (!text) throw new Error('请输入要加密的明文！');
+        if (!pubKey) throw new Error('请输入公钥！');
+        
+        // 模式 1：C1C3C2
+        const encrypted = sm2.doEncrypt(text, pubKey, 1);
+        // 标准密文前缀添加 04
+        document.getElementById('outputText').value = '04' + encrypted;
+        showAlert('✅ 加密成功！', 'success');
+      } catch (e) {
+        showAlert('❌ 加密出错: ' + e.message, 'error');
+      }
+    }
+
+    function handleDecrypt() {
+      try {
+        let cipher = cleanHex(document.getElementById('inputText').value);
+        let privKey = cleanHex(document.getElementById('privKey').value);
+        
+        if (!cipher) throw new Error('请输入要解密的密文！');
+        if (!privKey) throw new Error('请输入私钥！');
+
+        // sm-crypto 解密时不需要带 04 前缀
+        if (cipher.startsWith('04') && cipher.length > 128) {
+          cipher = cipher.substring(2);
+        }
+
+        // 模式 1：C1C3C2
+        const decrypted = sm2.doDecrypt(cipher, privKey, 1, { output: 'utf8' });
+        
+        if (!decrypted) {
+          throw new Error('解密返回为空，可能是由于：1. 密文损坏；2. 密钥不匹配。');
+        }
+        
+        document.getElementById('outputText').value = decrypted;
+        showAlert('✅ 解密成功！', 'success');
+      } catch (e) {
+        document.getElementById('outputText').value = '';
+        showAlert('❌ 解密出错: ' + e.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

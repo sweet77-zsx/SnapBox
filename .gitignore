@@ -1,0 +1,11 @@
+# Dependencies & Temp
+node_modules/
+.DS_Store
+Thumbs.db
+
+# IDE & Agents
+.agents/
+skills-lock.json
+.idea/
+.vscode/
+*.log

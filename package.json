@@ -1,0 +1,9 @@
+{
+  "name": "snapbox",
+  "version": "1.0.0",
+  "description": "轻匣 SnapBox - 极简实用轻量工具箱",
+  "scripts": {
+    "dev": "powershell -Command \"Start-Process 'http://localhost:5173'; python -m http.server 5173\"",
+    "start": "powershell -Command \"Start-Process 'http://localhost:5173'; python -m http.server 5173\""
+  }
+}
