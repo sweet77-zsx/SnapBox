@@ -7,6 +7,8 @@
     <link rel="icon" type="image/jpeg" href="logo.jpg">
     <script src="https://unpkg.com/sm-crypto/dist/sm2.js"></script>
     <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         :root {
             /* 清新明亮调色盘 */
@@ -1573,6 +1575,271 @@
         .file-icon.mapper { background: #e0e7ff; color: #4f46e5; }
         .file-icon.service { background: #dcfce7; color: #16a34a; }
         .file-icon.impl { background: #fef3c7; color: #d97706; }
+
+        /* ===== PDF 合并压缩专属样式 ===== */
+        .pdf-config-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-subtle);
+        }
+
+        .pdf-config-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .pdf-mode-group {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .pdf-mode-options {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .pdf-radio-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.82rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            user-select: none;
+            font-weight: 500;
+        }
+
+        .pdf-radio-label input {
+            cursor: pointer;
+            accent-color: var(--accent-primary);
+        }
+
+        .pdf-files-container {
+            flex: 1;
+            min-height: 420px;
+            max-height: 480px;
+            overflow-y: auto;
+            padding: 16px;
+            background: var(--bg-input);
+            display: flex;
+            flex-direction: column;
+            border-radius: 0;
+            box-sizing: border-box;
+            transition: var(--transition);
+        }
+
+        .pdf-files-container.dragover {
+            background: #f0f9ff;
+            border: 2px dashed #0284c7;
+        }
+
+        .pdf-empty-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            border: 2px dashed #cbd5e1;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+        }
+
+        .pdf-empty-box:hover {
+            border-color: #0284c7;
+            background: #ffffff;
+            box-shadow: 0 4px 16px rgba(2, 132, 199, 0.08);
+        }
+
+        .pdf-upload-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #e0f2fe;
+            color: #0284c7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        .pdf-file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .pdf-file-card {
+            background: #ffffff;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            transition: var(--transition);
+        }
+
+        .pdf-file-card:hover {
+            border-color: #93c5fd;
+            box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
+        }
+
+        .pdf-file-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .pdf-badge-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background: #fee2e2;
+            color: #dc2626;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        .pdf-file-meta {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .pdf-file-name {
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .pdf-file-sub {
+            font-size: 0.74rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .pdf-file-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .pdf-action-btn {
+            width: 26px;
+            height: 26px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: var(--transition);
+        }
+
+        .pdf-action-btn:hover:not(:disabled) {
+            border-color: #0284c7;
+            color: #0284c7;
+            background: #f0f9ff;
+        }
+
+        .pdf-action-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .pdf-action-btn.delete:hover {
+            border-color: #ef4444;
+            color: #ef4444;
+            background: #fee2e2;
+        }
+
+        .pdf-result-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .pdf-progress-track {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .pdf-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0284c7, #38bdf8);
+            border-radius: 4px;
+            transition: width 0.2s ease;
+        }
+
+        .pdf-success-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            background: #dcfce7;
+            color: #15803d;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+        }
+
+        .pdf-metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .pdf-metric-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            text-align: left;
+        }
+
+        .pdf-metric-card.highlight {
+            border-color: #38bdf8;
+            background: #f0f9ff;
+        }
     </style>
 </head>
 <body>
@@ -1639,6 +1906,14 @@
                         <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
                     </svg>
                     <span>DDL 代码生成</span>
+                </button>
+                <button class="tool-tab-btn" data-tool="pdf" onclick="switchTool('pdf')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                    </svg>
+                    <span>PDF 合并压缩</span>
                 </button>
             </nav>
 
@@ -2446,6 +2721,215 @@
                 </div>
             </div>
         </section>
+
+        <!-- 8. PDF 合并与压缩工具 -->
+        <section id="pdf-workspace" class="tool-workspace">
+            <div class="workspace-banner">
+                <div class="workspace-title-group">
+                    <h2>PDF 智能合并与体积极限压缩</h2>
+                    <p>多份 PDF 文件拖拽合并与顺序调整，支持智能压制到指定体积（MB/KB），全本地处理保护隐私</p>
+                </div>
+                <div class="workspace-actions-top">
+                    <button class="pill-btn" onclick="clearPdfTool()">清空重选</button>
+                </div>
+            </div>
+
+            <!-- PDF 压缩策略配置卡片 -->
+            <div class="pdf-config-card">
+                <div class="pdf-config-row">
+                    <div class="pdf-mode-group">
+                        <span class="config-label">合并与处理模式：</span>
+                        <div class="pdf-mode-options">
+                            <label class="pdf-radio-label">
+                                <input type="radio" name="pdfMode" value="compressTarget" checked onchange="togglePdfModeControls()">
+                                <span>🎯 压缩至指定体积上限 (推荐)</span>
+                            </label>
+                            <label class="pdf-radio-label">
+                                <input type="radio" name="pdfMode" value="lossless" onchange="togglePdfModeControls()">
+                                <span>⚡ 纯合并无损模式 (保留原始文本矢量)</span>
+                            </label>
+                            <label class="pdf-radio-label">
+                                <input type="radio" name="pdfMode" value="preset" onchange="togglePdfModeControls()">
+                                <span>📉 预设画质压缩</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 目标体积设置面板 -->
+                <div id="pdfTargetSizeRow" class="pdf-config-row" style="align-items: center; gap: 14px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border-subtle);">
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <span class="config-label">目标最大体积上限：</span>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <input type="number" id="pdfTargetSizeInput" class="config-input" style="width: 100px; font-weight: 600;" value="5.0" step="0.5" min="0.1">
+                            <select id="pdfTargetUnit" class="config-select" style="width: 76px;" onchange="updatePdfTargetQuickPills()">
+                                <option value="MB" selected>MB</option>
+                                <option value="KB">KB</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- 快捷体积标签 -->
+                    <div class="quick-pill-group" id="pdfQuickPills">
+                        <button type="button" class="quick-pill" onclick="setPdfTargetSize(1, 'MB')">1 MB</button>
+                        <button type="button" class="quick-pill" onclick="setPdfTargetSize(2, 'MB')">2 MB</button>
+                        <button type="button" class="quick-pill active" onclick="setPdfTargetSize(5, 'MB')">5 MB</button>
+                        <button type="button" class="quick-pill" onclick="setPdfTargetSize(10, 'MB')">10 MB</button>
+                        <button type="button" class="quick-pill" onclick="setPdfTargetSize(20, 'MB')">20 MB</button>
+                    </div>
+                </div>
+
+                <!-- 预设画质面板（折叠/按需显示） -->
+                <div id="pdfPresetRow" class="pdf-config-row" style="display: none; align-items: center; gap: 14px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border-subtle);">
+                    <span class="config-label">压缩强度：</span>
+                    <select id="pdfPresetLevel" class="config-select" style="width: 240px;">
+                        <option value="high">清晰平衡 (75% 画质，日常推荐)</option>
+                        <option value="medium">强力压缩 (55% 画质，体积显著缩小)</option>
+                        <option value="extreme">极限压制 (35% 画质，专攻严苛上传限制)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 主工作区：左侧上传与文件列表，右侧合并与压缩预览 -->
+            <div class="workbench-grid">
+                <!-- 左侧文件管理 -->
+                <div class="editor-panel">
+                    <div class="panel-header">
+                        <span class="panel-title">
+                            <span class="panel-title-dot"></span>
+                            待合并 PDF 文件列表
+                        </span>
+                        <div class="panel-tools">
+                            <label class="pill-btn primary" style="cursor: pointer; margin: 0;">
+                                <input type="file" id="pdfFileInput" multiple accept=".pdf,application/pdf" style="display: none;" onchange="handlePdfFilesSelected(this.files)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>
+                                添加 PDF 文件
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 拖拽上传与列表区 -->
+                    <div class="pdf-files-container" id="pdfDropZone" ondragover="handlePdfDragOver(event)" ondragleave="handlePdfDragLeave(event)" ondrop="handlePdfDrop(event)">
+                        <!-- 空状态引导 -->
+                        <div id="pdfEmptyPrompt" class="pdf-empty-box" onclick="document.getElementById('pdfFileInput').click()">
+                            <div class="pdf-upload-icon">
+                                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="12" y2="12"></line><line x1="15" y1="15" x2="12" y2="12"></line></svg>
+                            </div>
+                            <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">点击或将多个 PDF 文件拖拽到此处</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">支持批量上传，可在列表中调整合并的前后顺序</div>
+                        </div>
+
+                        <!-- 文件项列表 -->
+                        <div id="pdfFileList" class="pdf-file-list" style="display: none;"></div>
+                    </div>
+
+                    <div class="panel-footer">
+                        <div class="stat-group">
+                            <div class="stat-item">文件数: <span id="pdfFileCount" class="stat-val">0</span></div>
+                            <div class="stat-item">总页数: <span id="pdfTotalPages" class="stat-val">0</span></div>
+                            <div class="stat-item">原始大小: <span id="pdfTotalSize" class="stat-val">0 KB</span></div>
+                        </div>
+                        <div id="pdfListStatus">等待添加文件</div>
+                    </div>
+                </div>
+
+                <!-- 右侧处理状态与合并结果 -->
+                <div class="editor-panel">
+                    <div class="panel-header">
+                        <span class="panel-title">
+                            <span class="panel-title-dot output"></span>
+                            合并与压缩状态
+                        </span>
+                        <div class="panel-tools">
+                            <button id="pdfDownloadBtnTop" class="pill-btn primary" onclick="downloadMergedPdf()" disabled>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                立即下载
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="editor-container" style="display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 24px; min-height: 420px;">
+                        <!-- 初始占位卡 -->
+                        <div id="pdfResultPlaceholder" class="pdf-result-state">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M9 15h6"></path><path d="M9 11h6"></path></svg>
+                            <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-secondary); margin-top: 10px;">添加 PDF 文件后，点击下方按钮开始合并与压缩</span>
+                            <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">所有计算均在浏览器端纯本地完成，杜绝敏感资料外传</span>
+                        </div>
+
+                        <!-- 正在处理进度条卡 -->
+                        <div id="pdfProcessingState" class="pdf-result-state" style="display: none; width: 100%; max-width: 440px;">
+                            <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 8px;" id="pdfProgressTitle">正在处理中...</div>
+                            <div class="pdf-progress-track">
+                                <div class="pdf-progress-fill" id="pdfProgressBar" style="width: 0%;"></div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; width: 100%;">
+                                <span id="pdfProgressDetail">正在解析文档页面...</span>
+                                <span id="pdfProgressPercent">0%</span>
+                            </div>
+                        </div>
+
+                        <!-- 压缩完成结果统计展示卡 -->
+                        <div id="pdfCompleteState" class="pdf-result-state" style="display: none; width: 100%; max-width: 460px;">
+                            <div class="pdf-success-badge">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>PDF 合并并压缩成功！</span>
+                            </div>
+                            <div class="pdf-metrics-grid">
+                                <div class="pdf-metric-card">
+                                    <span class="metric-label">合并前总大小</span>
+                                    <span class="metric-val" id="pdfResultOriginalSize">0 MB</span>
+                                </div>
+                                <div class="pdf-metric-card highlight">
+                                    <span class="metric-label">最终生成大小</span>
+                                    <span class="metric-val" id="pdfResultFinalSize">0 MB</span>
+                                </div>
+                                <div class="pdf-metric-card">
+                                    <span class="metric-label">体积节省比例</span>
+                                    <span class="metric-val success" id="pdfResultRatio">-0%</span>
+                                </div>
+                                <div class="pdf-metric-card">
+                                    <span class="metric-label">总计页数</span>
+                                    <span class="metric-val" id="pdfResultPages">0 页</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 12px; margin-top: 20px; width: 100%;">
+                                <button class="btn-action btn-main" style="flex: 1;" onclick="downloadMergedPdf()">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                    立即下载合并 PDF
+                                </button>
+                                <button class="btn-action btn-ghost" onclick="previewMergedPdfInTab()" title="在浏览器新标签页中打开预览">
+                                    新标签页预览
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel-footer">
+                        <div class="stat-group">
+                            <div class="stat-item">状态: <span id="pdfBottomStatus" class="stat-val">待就绪</span></div>
+                        </div>
+                        <div>PDF / Canvas Engine</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 控制底栏 -->
+            <div class="control-dock">
+                <div class="action-button-group">
+                    <button class="btn-action btn-main" id="pdfStartActionBtn" onclick="startPdfProcess()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        开始合并并压缩 (Enter)
+                    </button>
+                    <button id="pdfDownloadBtnDock" class="btn-action btn-ghost" onclick="downloadMergedPdf()" disabled>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        下载合并文件
+                    </button>
+                    <button class="btn-action btn-danger" onclick="clearPdfTool()">清空重选</button>
+                </div>
+                <div class="control-dock-info">
+                    <span>支持自由调整合并顺序，采用多轮逼近算法精准压制到指定体积上限</span>
+                </div>
+            </div>
+        </section>
     </main>
 
     <!-- 图片大图高保真预览与原图对比模态框 -->
@@ -2589,6 +3073,7 @@
                     case 'image': startImageCompression(); break;
                     case 'sm2': handleSm2Decrypt(); break;
                     case 'ddl': generateCodeFromDDL(); break;
+                    case 'pdf': startPdfProcess(); break;
                 }
             }
         });
@@ -3286,6 +3771,10 @@
             }
             if (tool === 'ddl') {
                 resetDdlTool();
+            }
+            if (tool === 'pdf') {
+                clearPdfTool();
+                return;
             }
             updateStats(tool);
             showToast('已清空当前工作区内容', 'info');
@@ -4622,6 +5111,625 @@ ${classBody}}
             document.getElementById('tabLabelServiceImpl').textContent = 'ServiceImpl.java';
             document.getElementById('ddlStatus').textContent = '等待生成';
             switchDdlFileTab('entity');
+        }
+
+        // 通用 Blob 触发下载辅助函数
+        function triggerBlobDownload(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 1000);
+        }
+
+        /* ============================================================
+           8. PDF 智能合并与指定大小极限压缩模块
+           ============================================================ */
+        let pdfFileListData = []; // 存储待合并 PDF 文件对象列表: { id, file, name, size, pageCount, arrayBuffer }
+        let mergedPdfBlob = null;
+        let mergedPdfFileName = 'merged_document.pdf';
+        let isPdfProcessing = false;
+        let pdfFileIdCounter = 0;
+
+        // 安全获取 PDF 数据的独立 ArrayBuffer 副本（防止 Worker 传输导致底层 Buffer 被 Detached）
+        async function getPdfBufferCopy(item) {
+            if (!item.arrayBuffer || item.arrayBuffer.byteLength === 0) {
+                // 如果 ArrayBuffer 已被浏览器底层 Detach，自动从原生 File 对象重新读取
+                if (item.file && typeof item.file.arrayBuffer === 'function') {
+                    item.arrayBuffer = await item.file.arrayBuffer();
+                } else {
+                    throw new Error(`文件 [${item.name}] 的数据缓存已失效，请重新添加`);
+                }
+            }
+            return item.arrayBuffer.slice(0);
+        }
+
+        // 初始化 PDF.js Worker 配置
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        // 切换 PDF 压缩模式与配置面板展示
+        function togglePdfModeControls() {
+            const mode = document.querySelector('input[name="pdfMode"]:checked')?.value || 'compressTarget';
+            const targetRow = document.getElementById('pdfTargetSizeRow');
+            const presetRow = document.getElementById('pdfPresetRow');
+            if (targetRow) targetRow.style.display = (mode === 'compressTarget') ? 'flex' : 'none';
+            if (presetRow) presetRow.style.display = (mode === 'preset') ? 'flex' : 'none';
+        }
+
+        // 设置目标文件体积上限数值与单位
+        function setPdfTargetSize(val, unit) {
+            const input = document.getElementById('pdfTargetSizeInput');
+            const unitSelect = document.getElementById('pdfTargetUnit');
+            if (input) input.value = val;
+            if (unitSelect) unitSelect.value = unit;
+            updatePdfTargetQuickPills();
+        }
+
+        // 刷新快捷体积芯片的高亮状态
+        function updatePdfTargetQuickPills() {
+            const input = document.getElementById('pdfTargetSizeInput');
+            const unitSelect = document.getElementById('pdfTargetUnit');
+            if (!input || !unitSelect) return;
+            const val = parseFloat(input.value);
+            const unit = unitSelect.value;
+
+            document.querySelectorAll('#pdfQuickPills .quick-pill').forEach(pill => {
+                const text = pill.textContent.trim();
+                if (text === `${val} ${unit}`) {
+                    pill.classList.add('active');
+                } else {
+                    pill.classList.remove('active');
+                }
+            });
+        }
+
+        // 拖拽事件处理
+        function handlePdfDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const zone = document.getElementById('pdfDropZone');
+            if (zone) zone.classList.add('dragover');
+        }
+
+        function handlePdfDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const zone = document.getElementById('pdfDropZone');
+            if (zone) zone.classList.remove('dragover');
+        }
+
+        function handlePdfDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const zone = document.getElementById('pdfDropZone');
+            if (zone) zone.classList.remove('dragover');
+            if (e.dataTransfer && e.dataTransfer.files) {
+                handlePdfFilesSelected(e.dataTransfer.files);
+            }
+        }
+
+        // 批量选择/拖入 PDF 文件处理
+        async function handlePdfFilesSelected(files) {
+            if (!files || files.length === 0) return;
+            const validFiles = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.pdf') || f.type === 'application/pdf');
+            if (validFiles.length === 0) {
+                showToast('请选择 PDF 格式的文件 (*.pdf)', 'warning');
+                return;
+            }
+
+            document.getElementById('pdfListStatus').textContent = '正在读取解析 PDF 页面信息...';
+
+            for (const file of validFiles) {
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    let pageCount = 1;
+                    if (typeof PDFLib !== 'undefined') {
+                        try {
+                            const doc = await PDFLib.PDFDocument.load(arrayBuffer.slice(0), { ignoreEncryption: true });
+                            pageCount = doc.getPageCount();
+                        } catch (err) {
+                            console.warn('PDF-Lib 解析页数轻微异常:', err);
+                        }
+                    }
+                    pdfFileIdCounter++;
+                    pdfFileListData.push({
+                        id: 'pdf_f_' + pdfFileIdCounter,
+                        file: file,
+                        name: file.name,
+                        size: file.size,
+                        pageCount: pageCount,
+                        arrayBuffer: arrayBuffer
+                    });
+                } catch (e) {
+                    showToast(`文件 ${file.name} 读取失败: ${e.message}`, 'error');
+                }
+            }
+
+            renderPdfFileList();
+            updatePdfStats();
+
+            // 重设 input 允许重复选择相同文件
+            const inputEl = document.getElementById('pdfFileInput');
+            if (inputEl) inputEl.value = '';
+            showToast(`已成功添加 ${validFiles.length} 个 PDF 文件`, 'success');
+        }
+
+        // 渲染待合并文件列表卡片
+        function renderPdfFileList() {
+            const emptyPrompt = document.getElementById('pdfEmptyPrompt');
+            const fileList = document.getElementById('pdfFileList');
+            if (!emptyPrompt || !fileList) return;
+
+            if (pdfFileListData.length === 0) {
+                emptyPrompt.style.display = 'flex';
+                fileList.style.display = 'none';
+                fileList.innerHTML = '';
+                return;
+            }
+
+            emptyPrompt.style.display = 'none';
+            fileList.style.display = 'flex';
+            fileList.innerHTML = '';
+
+            pdfFileListData.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'pdf-file-card';
+                const isFirst = index === 0;
+                const isLast = index === pdfFileListData.length - 1;
+
+                card.innerHTML = `
+                    <div class="pdf-file-info">
+                        <div class="pdf-badge-icon">PDF</div>
+                        <div class="pdf-file-meta">
+                            <span class="pdf-file-name" title="${escapePdfHtml(item.name)}">${escapePdfHtml(item.name)}</span>
+                            <span class="pdf-file-sub">${item.pageCount} 页 · ${formatBytes(item.size)}</span>
+                        </div>
+                    </div>
+                    <div class="pdf-file-actions">
+                        <button type="button" class="pdf-action-btn" title="上移此文件" onclick="movePdfFile(${index}, -1)" ${isFirst ? 'disabled' : ''}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                        </button>
+                        <button type="button" class="pdf-action-btn" title="下移此文件" onclick="movePdfFile(${index}, 1)" ${isLast ? 'disabled' : ''}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                        </button>
+                        <button type="button" class="pdf-action-btn delete" title="移除此文件" onclick="removePdfFile(${index})">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                `;
+                fileList.appendChild(card);
+            });
+        }
+
+        function escapePdfHtml(str) {
+            return String(str).replace(/[&<>"']/g, m => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[m]);
+        }
+
+        // 调整文件次序 (上移/下移)
+        function movePdfFile(index, dir) {
+            const targetIdx = index + dir;
+            if (targetIdx < 0 || targetIdx >= pdfFileListData.length) return;
+            const temp = pdfFileListData[index];
+            pdfFileListData[index] = pdfFileListData[targetIdx];
+            pdfFileListData[targetIdx] = temp;
+            renderPdfFileList();
+            updatePdfStats();
+        }
+
+        // 移除单项文件
+        function removePdfFile(index) {
+            if (index < 0 || index >= pdfFileListData.length) return;
+            pdfFileListData.splice(index, 1);
+            renderPdfFileList();
+            updatePdfStats();
+        }
+
+        // 更新左侧列表底部统计
+        function updatePdfStats() {
+            const count = pdfFileListData.length;
+            const totalPages = pdfFileListData.reduce((acc, f) => acc + (f.pageCount || 1), 0);
+            const totalSize = pdfFileListData.reduce((acc, f) => acc + (f.size || 0), 0);
+
+            document.getElementById('pdfFileCount').textContent = count;
+            document.getElementById('pdfTotalPages').textContent = totalPages;
+            document.getElementById('pdfTotalSize').textContent = formatBytes(totalSize);
+
+            const statusEl = document.getElementById('pdfListStatus');
+            if (count === 0) {
+                statusEl.textContent = '等待添加文件';
+            } else {
+                statusEl.textContent = `已添加 ${count} 个文档 (${totalPages} 页)`;
+            }
+        }
+
+        // 更新进度条与提示文本
+        function updatePdfProgress(percent, detailText) {
+            const bar = document.getElementById('pdfProgressBar');
+            const pctText = document.getElementById('pdfProgressPercent');
+            const detail = document.getElementById('pdfProgressDetail');
+            if (bar) bar.style.width = `${Math.min(100, Math.max(0, percent))}%`;
+            if (pctText) pctText.textContent = `${Math.round(percent)}%`;
+            if (detail && detailText) detail.textContent = detailText;
+        }
+
+        // 主入口：开始合并并压缩
+        async function startPdfProcess() {
+            if (isPdfProcessing) return;
+            if (pdfFileListData.length === 0) {
+                showToast('请先添加至少一个待合并的 PDF 文件', 'warning');
+                return;
+            }
+            if (typeof PDFLib === 'undefined') {
+                showToast('PDF-Lib 渲染组件加载中或离线不可用，请稍后重试', 'error');
+                return;
+            }
+
+            isPdfProcessing = true;
+            document.getElementById('pdfStartActionBtn').disabled = true;
+            document.getElementById('pdfDownloadBtnTop').disabled = true;
+            document.getElementById('pdfDownloadBtnDock').disabled = true;
+
+            document.getElementById('pdfResultPlaceholder').style.display = 'none';
+            document.getElementById('pdfCompleteState').style.display = 'none';
+            document.getElementById('pdfProcessingState').style.display = 'flex';
+
+            document.getElementById('pdfProgressTitle').textContent = '正在合并与压缩 PDF...';
+            updatePdfProgress(5, '正在初始化引擎与解析文档...');
+            document.getElementById('pdfBottomStatus').textContent = '正在处理...';
+
+            await new Promise(r => setTimeout(r, 60));
+
+            try {
+                const mode = document.querySelector('input[name="pdfMode"]:checked')?.value || 'compressTarget';
+                const targetVal = parseFloat(document.getElementById('pdfTargetSizeInput').value) || 5.0;
+                const targetUnit = document.getElementById('pdfTargetUnit').value || 'MB';
+                const targetSizeBytes = targetVal * (targetUnit === 'MB' ? 1024 * 1024 : 1024);
+                const presetLevel = document.getElementById('pdfPresetLevel').value || 'high';
+
+                const totalOriginalBytes = pdfFileListData.reduce((acc, f) => acc + f.size, 0);
+                const totalPages = pdfFileListData.reduce((acc, f) => acc + (f.pageCount || 1), 0);
+
+                let finalBytes = null;
+
+                // 第一阶段：无损文档合并 (提取所有页面)
+                updatePdfProgress(15, '正在无损拼装合并所有页面...');
+                const losslessDoc = await PDFLib.PDFDocument.create();
+                for (let i = 0; i < pdfFileListData.length; i++) {
+                    const item = pdfFileListData[i];
+                    updatePdfProgress(15 + Math.round((i / pdfFileListData.length) * 15), `正在合并文档 (${i + 1}/${pdfFileListData.length}): ${item.name}`);
+                    const buf = await getPdfBufferCopy(item);
+                    const srcDoc = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+                    const copiedPages = await losslessDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+                    copiedPages.forEach(p => losslessDoc.addPage(p));
+                }
+                const losslessBytes = await losslessDoc.save();
+
+                if (mode === 'lossless') {
+                    finalBytes = losslessBytes;
+                } else if (mode === 'compressTarget') {
+                    // 如果无损合并后的体积本身就已经 <= 目标上限，直接使用无损高清输出
+                    if (losslessBytes.byteLength <= targetSizeBytes) {
+                        finalBytes = losslessBytes;
+                        showToast(`原始合并体积 (${formatBytes(losslessBytes.byteLength)}) 未超过目标限制，自动保留无损高清画质！`, 'success');
+                    } else {
+                        // 启动基于 Canvas 与自适应品质的体积极限压制
+                        updatePdfProgress(32, '初始体积超出目标上限，正在进行智能逐页压缩...');
+                        finalBytes = await compressPdfToTargetSize(pdfFileListData, targetSizeBytes, totalPages);
+                    }
+                } else if (mode === 'preset') {
+                    updatePdfProgress(32, '正在按预设画质重新压制排版...');
+                    finalBytes = await compressPdfWithPreset(pdfFileListData, presetLevel, totalPages);
+                }
+
+                mergedPdfBlob = new Blob([finalBytes], { type: 'application/pdf' });
+                const baseName = pdfFileListData[0].name.replace(/\.[^/.]+$/, '');
+                mergedPdfFileName = `${baseName}_merged_${Date.now().toString().slice(-4)}.pdf`;
+
+                updatePdfProgress(100, '处理完成！');
+                await new Promise(r => setTimeout(r, 200));
+
+                document.getElementById('pdfProcessingState').style.display = 'none';
+                document.getElementById('pdfCompleteState').style.display = 'flex';
+
+                document.getElementById('pdfResultOriginalSize').textContent = formatBytes(totalOriginalBytes);
+                document.getElementById('pdfResultFinalSize').textContent = formatBytes(finalBytes.byteLength);
+
+                const savedRatio = Math.round((1 - finalBytes.byteLength / totalOriginalBytes) * 100);
+                const ratioEl = document.getElementById('pdfResultRatio');
+                if (savedRatio >= 0) {
+                    ratioEl.textContent = `-${savedRatio}%`;
+                    ratioEl.className = 'metric-val success';
+                } else {
+                    ratioEl.textContent = `+${Math.abs(savedRatio)}%`;
+                    ratioEl.className = 'metric-val';
+                }
+
+                document.getElementById('pdfResultPages').textContent = `${totalPages} 页`;
+                document.getElementById('pdfBottomStatus').textContent = `已完成 (${formatBytes(finalBytes.byteLength)})`;
+
+                document.getElementById('pdfDownloadBtnTop').disabled = false;
+                document.getElementById('pdfDownloadBtnDock').disabled = false;
+
+                showToast(`PDF 合并与处理完成！生成体积: ${formatBytes(finalBytes.byteLength)}`, 'success');
+            } catch (err) {
+                console.error('PDF 处理失败:', err);
+                showToast('PDF 处理失败: ' + err.message, 'error');
+                document.getElementById('pdfProcessingState').style.display = 'none';
+                document.getElementById('pdfResultPlaceholder').style.display = 'flex';
+                document.getElementById('pdfBottomStatus').textContent = '处理异常';
+            } finally {
+                isPdfProcessing = false;
+                document.getElementById('pdfStartActionBtn').disabled = false;
+            }
+        }
+
+        // 快速采样代表页的压缩体积（用时仅几十毫秒）
+        async function samplePdfPageBytes(filesData, scale, quality) {
+            const sampleItems = [filesData[0]];
+            if (filesData.length > 1) {
+                sampleItems.push(filesData[filesData.length - 1]);
+            }
+            let totalBytes = 0;
+            let sampleCount = 0;
+
+            for (const item of sampleItems) {
+                let pdfJsDoc = null;
+                try {
+                    const buf = await getPdfBufferCopy(item);
+                    const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buf) });
+                    pdfJsDoc = await loadingTask.promise;
+                    const page = await pdfJsDoc.getPage(1);
+                    const renderViewport = page.getViewport({ scale: scale });
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.round(renderViewport.width);
+                    canvas.height = Math.round(renderViewport.height);
+                    const ctx = canvas.getContext('2d', { alpha: false });
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    await page.render({ canvasContext: ctx, viewport: renderViewport }).promise;
+
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    const base64Data = dataUrl.split(',')[1];
+                    const byteLen = Math.floor((base64Data.length * 3) / 4);
+                    totalBytes += byteLen;
+                    sampleCount++;
+
+                    canvas.width = 0;
+                    canvas.height = 0;
+                } catch (e) {
+                    console.warn('Sample page error:', e);
+                } finally {
+                    if (pdfJsDoc && typeof pdfJsDoc.destroy === 'function') {
+                        try { await pdfJsDoc.destroy(); } catch (_) {}
+                    }
+                }
+            }
+
+            return sampleCount > 0 ? Math.round(totalBytes / sampleCount) : 100 * 1024;
+        }
+
+        // 核心压缩算法：智能采样与自适应逼近指定目标体积上限（尽量靠近限制上限，最大化保留清晰度）
+        async function compressPdfToTargetSize(filesData, targetSizeBytes, totalPages) {
+            if (typeof pdfjsLib === 'undefined') {
+                throw new Error('PDF.js 未正确加载，无法进行图像重绘压缩');
+            }
+            if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            }
+
+            updatePdfProgress(26, '正在快速采样文档特征并计算最佳清晰度参数...');
+
+            // 1. 基准采样测算 (以 scale=1.3, quality=0.80 作为基准采样点)
+            const s0 = 1.30;
+            const q0 = 0.80;
+            const sampleBytesAtBase = await samplePdfPageBytes(filesData, s0, q0);
+            const estimatedAtBase = sampleBytesAtBase * totalPages + 15000;
+
+            // 测算与目标体积（预留 6% 安全冗余，目标 94%）的比例
+            const targetBudget = targetSizeBytes * 0.94;
+            const ratio = targetBudget / estimatedAtBase;
+
+            let scale = s0;
+            let quality = q0;
+
+            if (ratio >= 1.0) {
+                // 空间充裕：大幅提升解析度与画质，使最终体积充分贴近上限！
+                const scaleFactor = Math.min(1.75, Math.pow(ratio, 0.40));
+                const qualityFactor = Math.pow(ratio, 0.22);
+                scale = Math.min(2.0, Math.max(0.65, +(s0 * scaleFactor).toFixed(2)));
+                quality = Math.min(0.92, Math.max(0.30, +(q0 * qualityFactor).toFixed(2)));
+            } else {
+                // 上限较紧：按比例下调，确保不超标
+                const adj = Math.sqrt(ratio * 0.95);
+                scale = Math.max(0.55, +(s0 * adj).toFixed(2));
+                quality = Math.max(0.25, +(q0 * Math.pow(ratio, 0.35)).toFixed(2));
+            }
+
+            // 快速使用新参数再验证一次采样（耗时仅 ~30ms）
+            const sampleBytesTuned = await samplePdfPageBytes(filesData, scale, quality);
+            const estimatedTuned = sampleBytesTuned * totalPages + 15000;
+            if (estimatedTuned > targetSizeBytes * 0.97) {
+                const adj = Math.sqrt((targetSizeBytes * 0.93) / estimatedTuned);
+                scale = Math.max(0.52, +(scale * adj).toFixed(2));
+                quality = Math.max(0.22, +(quality * Math.pow(adj, 0.6)).toFixed(2));
+            }
+
+            // 2. 第一轮正式高清渲染生成
+            let bytes = await renderPdfWithQuality(filesData, scale, quality, totalPages, '画质极限逼近');
+
+            // 3. 校验最终结果并进行自适应二次校准
+            // 情况 A：超出目标上限 (> targetSizeBytes) -> 必须精准收缩到限制内
+            if (bytes.byteLength > targetSizeBytes && (scale > 0.55 || quality > 0.25)) {
+                updatePdfProgress(50, '略微超出上限，正在精准微调压制确保达标...');
+                const shrinkRatio = (targetSizeBytes * 0.94) / bytes.byteLength;
+                const newScale = Math.max(0.52, +(scale * Math.sqrt(shrinkRatio)).toFixed(2));
+                const newQuality = Math.max(0.20, +(quality * Math.pow(shrinkRatio, 0.55)).toFixed(2));
+
+                const secondBytes = await renderPdfWithQuality(filesData, newScale, newQuality, totalPages, '二次微调压制');
+                if (secondBytes.byteLength <= targetSizeBytes || secondBytes.byteLength < bytes.byteLength) {
+                    bytes = secondBytes;
+                }
+            } 
+            // 情况 B：生成体积距离目标上限过远 (< targetSizeBytes * 0.80)，且画质尚有提升空间 -> 自动提质逼近上限！
+            else if (bytes.byteLength < targetSizeBytes * 0.80 && (scale < 1.95 || quality < 0.91)) {
+                const boostRatio = (targetSizeBytes * 0.95) / bytes.byteLength;
+                const boostScale = Math.min(2.0, +(scale * Math.min(1.4, Math.sqrt(boostRatio * 0.88))).toFixed(2));
+                const boostQuality = Math.min(0.92, +(quality * Math.min(1.25, Math.pow(boostRatio, 0.28))).toFixed(2));
+
+                if (boostScale > scale + 0.08 || boostQuality > quality + 0.04) {
+                    updatePdfProgress(50, '体积仍有充裕空间，正在提高清晰度以尽量靠近目标限制...');
+                    const secondBytes = await renderPdfWithQuality(filesData, boostScale, boostQuality, totalPages, '提升清晰度逼近上限');
+                    // 只要二次生成的体积在限制范围内，就采纳更清晰的版本
+                    if (secondBytes.byteLength <= targetSizeBytes) {
+                        bytes = secondBytes;
+                    }
+                }
+            }
+
+            // 如果最终依然超出目标大小（如用户要求把 50 页压制在 100KB 内，已达到极值）
+            if (bytes.byteLength > targetSizeBytes * 1.05) {
+                const targetStr = formatBytes(targetSizeBytes);
+                const minStr = formatBytes(bytes.byteLength);
+                setTimeout(() => {
+                    if (typeof showUnableToCompressModal === 'function') {
+                        showUnableToCompressModal(targetStr, minStr);
+                    } else {
+                        showToast(`已尽可能极限压缩至 ${minStr}（超出目标 ${targetStr}）`, 'warning');
+                    }
+                }, 600);
+            }
+
+            return bytes;
+        }
+
+        // 预设画质压缩
+        async function compressPdfWithPreset(filesData, presetLevel, totalPages) {
+            let scale = 1.25;
+            let quality = 0.75;
+            if (presetLevel === 'medium') {
+                scale = 1.0;
+                quality = 0.55;
+            } else if (presetLevel === 'extreme') {
+                scale = 0.78;
+                quality = 0.35;
+            }
+            return await renderPdfWithQuality(filesData, scale, quality, totalPages, '预设压制');
+        }
+
+        // 逐页 Canvas 渲染并嵌入新 PDF (保持原始页面物理尺寸与比例)
+        async function renderPdfWithQuality(filesData, scale, quality, totalPages, phaseLabel) {
+            const outDoc = await PDFLib.PDFDocument.create();
+            let processedPages = 0;
+
+            for (let fIdx = 0; fIdx < filesData.length; fIdx++) {
+                const item = filesData[fIdx];
+                let pdfJsDoc = null;
+                try {
+                    const buf = await getPdfBufferCopy(item);
+                    const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buf) });
+                    pdfJsDoc = await loadingTask.promise;
+
+                    for (let pNum = 1; pNum <= pdfJsDoc.numPages; pNum++) {
+                        processedPages++;
+                        const pct = 35 + Math.round((processedPages / totalPages) * 55);
+                        updatePdfProgress(pct, `[${phaseLabel}] 正在优化第 ${processedPages}/${totalPages} 页...`);
+
+                        const page = await pdfJsDoc.getPage(pNum);
+                        const origViewport = page.getViewport({ scale: 1.0 });
+                        const renderViewport = page.getViewport({ scale: scale });
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.round(renderViewport.width);
+                        canvas.height = Math.round(renderViewport.height);
+                        const ctx = canvas.getContext('2d', { alpha: false });
+
+                        // 填充纯白底色，防止透明背景导致黑屏
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                        await page.render({ canvasContext: ctx, viewport: renderViewport }).promise;
+
+                        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        const base64Data = dataUrl.split(',')[1];
+                        const binStr = atob(base64Data);
+                        const imgBytes = new Uint8Array(binStr.length);
+                        for (let b = 0; b < binStr.length; b++) {
+                            imgBytes[b] = binStr.charCodeAt(b);
+                        }
+
+                        const embeddedImg = await outDoc.embedJpg(imgBytes);
+                        const newPage = outDoc.addPage([origViewport.width, origViewport.height]);
+                        newPage.drawImage(embeddedImg, {
+                            x: 0,
+                            y: 0,
+                            width: origViewport.width,
+                            height: origViewport.height
+                        });
+
+                        // 释放 Canvas 显存
+                        canvas.width = 0;
+                        canvas.height = 0;
+                    }
+                } finally {
+                    if (pdfJsDoc && typeof pdfJsDoc.destroy === 'function') {
+                        try { await pdfJsDoc.destroy(); } catch (_) {}
+                    }
+                }
+            }
+
+            updatePdfProgress(95, '正在封装与写入输出文件...');
+            return await outDoc.save();
+        }
+
+        // 下载合并压缩后的 PDF
+        function downloadMergedPdf() {
+            if (!mergedPdfBlob) {
+                showToast('暂无已生成的 PDF 文件可供下载', 'warning');
+                return;
+            }
+            triggerBlobDownload(mergedPdfBlob, mergedPdfFileName);
+            showToast(`已开始下载 ${mergedPdfFileName}`, 'success');
+        }
+
+        // 在浏览器新标签页中打开预览
+        function previewMergedPdfInTab() {
+            if (!mergedPdfBlob) {
+                showToast('暂无已生成的 PDF 文件可供预览', 'warning');
+                return;
+            }
+            const blobUrl = URL.createObjectURL(mergedPdfBlob);
+            window.open(blobUrl, '_blank');
+        }
+
+        // 清空 PDF 工作区
+        function clearPdfTool() {
+            pdfFileListData = [];
+            mergedPdfBlob = null;
+            isPdfProcessing = false;
+            renderPdfFileList();
+            updatePdfStats();
+
+            document.getElementById('pdfResultPlaceholder').style.display = 'flex';
+            document.getElementById('pdfProcessingState').style.display = 'none';
+            document.getElementById('pdfCompleteState').style.display = 'none';
+
+            document.getElementById('pdfDownloadBtnTop').disabled = true;
+            document.getElementById('pdfDownloadBtnDock').disabled = true;
+            document.getElementById('pdfStartActionBtn').disabled = false;
+            document.getElementById('pdfBottomStatus').textContent = '待就绪';
+
+            showToast('已清空 PDF 工作区列表与结果', 'info');
         }
     </script>
 </body>
