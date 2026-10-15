@@ -6,6 +6,7 @@
     <title>轻匣 SnapBox - 极简实用开发工具箱</title>
     <link rel="icon" type="image/jpeg" href="logo.jpg">
     <script src="https://unpkg.com/sm-crypto/dist/sm2.js"></script>
+    <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
     <style>
         :root {
             /* 清新明亮调色盘 */
@@ -1237,6 +1238,341 @@
                 padding: 10px 14px;
             }
         }
+
+        /* ===== JSON 可折叠交互树视图样式 ===== */
+        .json-view-switch {
+            display: inline-flex;
+            background: #f1f5f9;
+            border-radius: var(--radius-sm);
+            padding: 2px;
+            border: 1px solid #e2e8f0;
+            gap: 2px;
+        }
+
+        .view-tab-btn {
+            border: none;
+            background: transparent;
+            font-size: 0.76rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .view-tab-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .view-tab-btn.active {
+            background: #ffffff;
+            color: var(--accent-primary);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            font-weight: 600;
+        }
+
+        .json-tree-wrapper {
+            width: 100%;
+            height: 480px;
+            min-height: 380px;
+            padding: 16px 20px;
+            background: transparent;
+            font-family: var(--font-mono);
+            font-size: 13.5px;
+            line-height: 1.65;
+            overflow-y: auto;
+            overflow-x: auto;
+            color: #334155;
+            box-sizing: border-box;
+            user-select: text;
+        }
+
+        .json-tree-placeholder {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            gap: 12px;
+            font-size: 13px;
+            font-family: var(--font-ui);
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .json-tree-placeholder svg {
+            color: #94a3b8;
+            opacity: 0.8;
+        }
+
+        .json-item {
+            position: relative;
+            white-space: pre;
+            line-height: 1.65;
+        }
+
+        .json-line {
+            display: inline-flex;
+            align-items: center;
+            min-height: 22px;
+            white-space: pre;
+        }
+
+        .json-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            margin-right: 4px;
+            cursor: pointer;
+            border-radius: 4px;
+            color: #64748b;
+            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            flex-shrink: 0;
+            vertical-align: middle;
+        }
+
+        .json-toggle:hover {
+            color: var(--accent-primary);
+            background: #e0f2fe;
+        }
+
+        .json-toggle svg {
+            width: 12px;
+            height: 12px;
+            fill: currentColor;
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .json-collapsible.collapsed > .json-line > .json-toggle svg {
+            transform: rotate(-90deg);
+        }
+
+        .json-body {
+            padding-left: 18px;
+            border-left: 1.5px dashed #e2e8f0;
+            margin-left: 8px;
+            transition: border-color 0.15s ease;
+        }
+
+        .json-collapsible:hover > .json-body {
+            border-left-color: #93c5fd;
+        }
+
+        .json-collapsible.collapsed > .json-body,
+        .json-collapsible.collapsed > .json-foot {
+            display: none;
+        }
+
+        .json-ellipsis {
+            display: none;
+            background: #f0f9ff;
+            color: #0284c7;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 1px 7px;
+            border-radius: 4px;
+            margin: 0 4px;
+            cursor: pointer;
+            border: 1px solid #bae6fd;
+            font-family: var(--font-mono);
+            user-select: none;
+            transition: var(--transition);
+        }
+
+        .json-ellipsis:hover {
+            background: #e0f2fe;
+            border-color: #7dd3fc;
+            box-shadow: 0 1px 3px rgba(14, 165, 233, 0.15);
+        }
+
+        .json-closed-bracket-collapsed,
+        .json-comma-collapsed {
+            display: none;
+        }
+
+        .json-collapsible.collapsed > .json-line > .json-ellipsis,
+        .json-collapsible.collapsed > .json-line > .json-closed-bracket-collapsed,
+        .json-collapsible.collapsed > .json-line > .json-comma-collapsed {
+            display: inline-block;
+        }
+
+        /* 语法着色高亮 */
+        .json-key {
+            color: #0284c7;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .json-val-string {
+            color: #059669;
+        }
+
+        .json-val-number {
+            color: #d97706;
+            font-weight: 500;
+        }
+
+        .json-val-boolean {
+            color: #7c3aed;
+            font-weight: 600;
+        }
+
+        .json-val-null {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        .json-bracket {
+            color: #475569;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0 1px;
+            border-radius: 2px;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+
+        .json-bracket:hover {
+            color: var(--accent-primary);
+            background: #e0f2fe;
+        }
+
+        .json-comma {
+            color: #94a3b8;
+        }
+
+        /* ===== DDL 代码生成器专属样式 ===== */
+        .ddl-config-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-subtle);
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 14px;
+            margin-bottom: 12px;
+        }
+
+        .config-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .config-field label {
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .config-input, .config-select {
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 7px 12px;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .config-input:focus, .config-select:focus {
+            border-color: var(--border-active);
+            background: #ffffff;
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .config-checkboxes {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border-subtle);
+        }
+
+        .config-check-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .config-check-label input {
+            cursor: pointer;
+            accent-color: var(--accent-primary);
+        }
+
+        /* 多文件 Tab 标签栏 */
+        .file-tab-bar {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #f1f5f9;
+            padding: 3px;
+            border-radius: var(--radius-sm);
+            overflow-x: auto;
+            max-width: 100%;
+        }
+
+        .file-tab-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border: none;
+            background: transparent;
+            font-size: 0.78rem;
+            font-family: var(--font-mono);
+            color: var(--text-secondary);
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: var(--transition);
+        }
+
+        .file-tab-item:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .file-tab-item.active {
+            background: #ffffff;
+            color: var(--accent-primary);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            font-weight: 600;
+        }
+
+        .file-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .file-icon.java { background: #fee2e2; color: #dc2626; }
+        .file-icon.mapper { background: #e0e7ff; color: #4f46e5; }
+        .file-icon.service { background: #dcfce7; color: #16a34a; }
+        .file-icon.impl { background: #fef3c7; color: #d97706; }
     </style>
 </head>
 <body>
@@ -1296,11 +1632,19 @@
                     </svg>
                     <span>SM2 加解密</span>
                 </button>
+                <button class="tool-tab-btn" data-tool="ddl" onclick="switchTool('ddl')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                    </svg>
+                    <span>DDL 代码生成</span>
+                </button>
             </nav>
 
             <div class="header-meta">
                 <div class="shortcut-hint" title="按快捷键可直接执行主操作">
-                    <span>Ctrl</span> + <span>Enter</span> 执行
+                    <span>Enter</span> 执行
                 </div>
             </div>
         </div>
@@ -1383,7 +1727,7 @@
                 <div class="action-button-group">
                     <button class="btn-action btn-main" onclick="decodeXML()">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                        立即解码 (Ctrl+Enter)
+                        立即解码 (Enter)
                     </button>
                     <button class="btn-action btn-ghost" onclick="formatXML()">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="3" y2="18"></line></svg>
@@ -1442,15 +1786,33 @@
                             <span class="panel-title-dot output"></span>
                             格式化输出
                         </span>
-                        <div class="panel-tools">
+                        <div class="panel-tools" style="display: flex; align-items: center; gap: 8px;">
+                            <div class="json-view-switch" id="jsonViewSwitch">
+                                <button type="button" class="view-tab-btn active" id="btnJsonViewTree" onclick="switchJsonView('tree')" title="交互式树状折叠视图">树视图</button>
+                                <button type="button" class="view-tab-btn" id="btnJsonViewText" onclick="switchJsonView('text')" title="原生代码文本视图">纯文本</button>
+                            </div>
+                            <button class="pill-btn" id="btnJsonExpandAll" onclick="expandAllJsonTree(true)" title="全部展开所有对象与数组">
+                                全部展开
+                            </button>
+                            <button class="pill-btn" id="btnJsonCollapseAll" onclick="expandAllJsonTree(false)" title="全部收起所有对象与数组">
+                                全部收起
+                            </button>
                             <button class="pill-btn primary" onclick="copyOutput('jsonOutput')">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                                 复制结果
                             </button>
                         </div>
                     </div>
-                    <div class="editor-container">
-                        <textarea id="jsonOutput" class="code-editor" readonly placeholder="格式化或压缩后的 JSON 将在此呈现..."></textarea>
+                    <div class="editor-container" id="jsonOutputContainer" style="position: relative;">
+                        <!-- 交互式可折叠展开树视图 -->
+                        <div id="jsonTreeViewer" class="json-tree-wrapper">
+                            <div class="json-tree-placeholder">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="15" y2="17"></line></svg>
+                                <span>格式化后的 JSON 将在此呈现，支持 {} 与 [] 逐级展开/收起</span>
+                            </div>
+                        </div>
+                        <!-- 纯文本文本域（可切换） -->
+                        <textarea id="jsonOutput" class="code-editor" readonly style="display: none;" placeholder="格式化或压缩后的 JSON 将在此呈现..."></textarea>
                     </div>
                     <div class="panel-footer">
                         <div class="stat-group">
@@ -1466,16 +1828,26 @@
                 <div class="action-button-group">
                     <button class="btn-action btn-main" onclick="formatJSON()">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
-                        格式化美化 (Ctrl+Enter)
+                        格式化美化 (Enter)
                     </button>
                     <button class="btn-action btn-ghost" onclick="compressJSON()">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
                         单行压缩
                     </button>
+                    <button class="btn-action btn-ghost" onclick="expandAllJsonTree(true)" title="展开所有 {} 和 [] 节点">
+                        全部展开 {}
+                    </button>
+                    <button class="btn-action btn-ghost" onclick="expandAllJsonTree(false)" title="收起所有 {} 和 [] 节点">
+                        全部收起 {}
+                    </button>
                     <button class="btn-action btn-danger" onclick="clearAll('json')">清空重置</button>
                 </div>
-                <div class="control-dock-info">
-                    <span>自动校验语法有效性与缩进层级</span>
+                <div class="control-dock-info" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                    <label class="config-check-label" style="font-weight: 500;" title="自动将多重转义包裹的 String 类型 JSON（如 \&quot;{\\\&quot;key\\\&quot;: ...}\&quot;）还原为对象/数组结构">
+                        <input type="checkbox" id="jsonAutoUnescape" checked>
+                        <span>智能解析 String 嵌套 JSON</span>
+                    </label>
+                    <span>支持语法校验、缩进排版及多层级交互折叠展开</span>
                 </div>
             </div>
         </section>
@@ -1618,7 +1990,7 @@
                 <div class="action-button-group">
                     <button class="btn-action btn-main" onclick="convertAmount()">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        立即转换 (Ctrl+Enter)
+                        立即转换 (Enter)
                     </button>
                     <button class="btn-action btn-danger" onclick="clearAll('amount')">清空重置</button>
                 </div>
@@ -1761,7 +2133,7 @@
                 <div class="action-button-group">
                     <button class="btn-action btn-main" onclick="startImageCompression()">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                        开始压缩 (Ctrl+Enter)
+                        开始压缩 (Enter)
                     </button>
                     <button id="previewImageBtnDock" class="btn-action btn-ghost" onclick="openImagePreviewModal()" disabled>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
@@ -1903,13 +2275,174 @@
                     </button>
                     <button class="btn-action btn-main" style="background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 2px 10px rgba(16, 185, 129, 0.28);" onclick="handleSm2Decrypt()">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
-                        🔓 立即解密 (Ctrl+Enter)
+                        🔓 立即解密 (Enter)
                     </button>
                     <button class="btn-action btn-ghost" onclick="generateSm2KeyPair()">生成新密钥对</button>
                     <button class="btn-action btn-danger" onclick="clearSm2All()">清空重置</button>
                 </div>
                 <div class="control-dock-info">
                     <span>标准模式：C1C3C2 (密文自动拼接 04 前缀，解密智能去 04 容错)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. 数据库 DDL 逆向代码生成器 -->
+        <section id="ddl-workspace" class="tool-workspace">
+            <div class="workspace-banner">
+                <div class="workspace-title-group">
+                    <h2>数据库 DDL 逆向代码生成器</h2>
+                    <p>解析数据库建表 SQL，一键生成规范的 Java 实体类、Mapper、Service 及 ServiceImpl</p>
+                </div>
+                <div class="workspace-actions-top">
+                    <button class="pill-btn" onclick="loadExample('ddl')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                        加载建表示例
+                    </button>
+                    <button class="pill-btn" onclick="clearAll('ddl')">清空</button>
+                </div>
+            </div>
+
+            <!-- 参数设置工具卡片 -->
+            <div class="ddl-config-card">
+                <div class="config-grid">
+                    <div class="config-field">
+                        <label for="ddlPackage">基础包路径 (Package)</label>
+                        <input type="text" id="ddlPackage" class="config-input" value="com.example.system" placeholder="例如：com.example.project">
+                    </div>
+                    <div class="config-field">
+                        <label for="ddlAuthor">作者名称 (Author)</label>
+                        <input type="text" id="ddlAuthor" class="config-input" value="Developer" placeholder="JavaDoc 注释作者">
+                    </div>
+                    <div class="config-field">
+                        <label for="ddlPrefix">过滤表前缀</label>
+                        <input type="text" id="ddlPrefix" class="config-input" value="sys_,t_" placeholder="多个逗号分隔，如 sys_,t_">
+                    </div>
+                    <div class="config-field">
+                        <label for="ddlFramework">ORM / 框架风格</label>
+                        <select id="ddlFramework" class="config-select">
+                            <option value="mybatis-plus" selected>MyBatis-Plus (继承 BaseMapper/Service)</option>
+                            <option value="mybatis">原生 MyBatis (标准 CRUD 接口)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="config-checkboxes">
+                    <label class="config-check-label">
+                        <input type="checkbox" id="ddlLombok" checked>
+                        <span>启用 Lombok 注解 (@Data / @AllArgsConstructor)</span>
+                    </label>
+                    <label class="config-check-label">
+                        <input type="checkbox" id="ddlSwagger" checked>
+                        <span>生成字段与类详细 JavaDoc 注释</span>
+                    </label>
+                    <label class="config-check-label">
+                        <input type="checkbox" id="ddlSerializable" checked>
+                        <span>实现 Serializable 接口</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 主工作区：左侧 DDL 输入，右侧文件选项卡代码生成输出 -->
+            <div class="workbench-grid">
+                <!-- 左侧 DDL 输入 -->
+                <div class="editor-panel">
+                    <div class="panel-header">
+                        <span class="panel-title">
+                            <span class="panel-title-dot"></span>
+                            输入建表 DDL (CREATE TABLE)
+                        </span>
+                        <div class="panel-tools">
+                            <button class="pill-btn" onclick="pasteClipboard('ddlInput')">粘贴</button>
+                        </div>
+                    </div>
+                    <div class="editor-container">
+                        <textarea id="ddlInput" class="code-editor" placeholder="在此粘贴建表 SQL，例如：&#10;CREATE TABLE `sys_user` (&#10;  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',&#10;  `username` varchar(64) NOT NULL COMMENT '用户账号',&#10;  `nickname` varchar(64) DEFAULT NULL COMMENT '用户昵称',&#10;  `email` varchar(128) DEFAULT NULL COMMENT '邮箱',&#10;  `status` tinyint(4) DEFAULT 1 COMMENT '状态: 0禁用 1正常',&#10;  `amount` decimal(10,2) DEFAULT '0.00' COMMENT '账户余额',&#10;  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',&#10;  PRIMARY KEY (`id`)&#10;) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户信息表';"></textarea>
+                    </div>
+                    <div class="panel-footer">
+                        <div class="stat-group">
+                            <div class="stat-item">字符: <span id="ddlInputCount" class="stat-val">0</span></div>
+                            <div class="stat-item">行数: <span id="ddlInputLines" class="stat-val">0</span></div>
+                        </div>
+                        <div>SQL DDL</div>
+                    </div>
+                </div>
+
+                <!-- 右侧 4 文件标签卡预览与操作 -->
+                <div class="editor-panel">
+                    <div class="panel-header" style="flex-wrap: wrap; gap: 8px;">
+                        <!-- 文件 Tab 切换 -->
+                        <div class="file-tab-bar" id="ddlFileTabs">
+                            <button class="file-tab-item active" data-tab="entity" onclick="switchDdlFileTab('entity')">
+                                <span class="file-icon java">J</span>
+                                <span id="tabLabelEntity">Entity.java</span>
+                            </button>
+                            <button class="file-tab-item" data-tab="mapper" onclick="switchDdlFileTab('mapper')">
+                                <span class="file-icon mapper">M</span>
+                                <span id="tabLabelMapper">Mapper.java</span>
+                            </button>
+                            <button class="file-tab-item" data-tab="service" onclick="switchDdlFileTab('service')">
+                                <span class="file-icon service">S</span>
+                                <span id="tabLabelService">Service.java</span>
+                            </button>
+                            <button class="file-tab-item" data-tab="serviceImpl" onclick="switchDdlFileTab('serviceImpl')">
+                                <span class="file-icon impl">I</span>
+                                <span id="tabLabelServiceImpl">ServiceImpl.java</span>
+                            </button>
+                        </div>
+
+                        <!-- 顶部便捷操作 -->
+                        <div class="panel-tools" style="display: flex; align-items: center; gap: 6px;">
+                            <button class="pill-btn" onclick="copyCurrentDdlFile()" title="复制当前选项卡代码">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                复制当前
+                            </button>
+                            <button class="pill-btn" onclick="downloadCurrentDdlFile()" title="下载当前打开的单个 Java 文件">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                下载当前
+                            </button>
+                            <button class="pill-btn primary" onclick="downloadAllDdlFiles()" title="一键打包或下载全部 4 个文件">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                                打包下载全部
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="editor-container">
+                        <textarea id="ddlOutput" class="code-editor" readonly placeholder="解析 DDL 后生成的 Java 代码将在此呈现...&#10;可在此查看 Entity、Mapper、Service、ServiceImpl 并随时复制或下载"></textarea>
+                    </div>
+
+                    <div class="panel-footer">
+                        <div class="stat-group">
+                            <div class="stat-item">字符: <span id="ddlOutputCount" class="stat-val">0</span></div>
+                            <div class="stat-item">行数: <span id="ddlOutputLines" class="stat-val">0</span></div>
+                        </div>
+                        <div id="ddlStatus">等待生成</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 控制底栏 -->
+            <div class="control-dock">
+                <div class="action-button-group">
+                    <button class="btn-action btn-main" onclick="generateCodeFromDDL()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                        生成全套代码 (Enter)
+                    </button>
+                    <button class="btn-action btn-ghost" onclick="copyCurrentDdlFile()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        复制代码
+                    </button>
+                    <button class="btn-action btn-ghost" onclick="downloadCurrentDdlFile()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        下载当前
+                    </button>
+                    <button class="btn-action btn-ghost" onclick="downloadAllDdlFiles()" style="color: #0284c7; font-weight: 600;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                        一键打包全部 (ZIP)
+                    </button>
+                    <button class="btn-action btn-danger" onclick="clearAll('ddl')">清空重置</button>
+                </div>
+                <div class="control-dock-info">
+                    <span>纯本地解析，不上传数据库结构，支持多文件 Tab 预览、一键复制与 ZIP 打包下载</span>
                 </div>
             </div>
         </section>
@@ -2035,9 +2568,18 @@
             }
         }
 
-        // 键盘快捷键监听 (Ctrl+Enter 执行主动作)
+        // 键盘快捷键监听 (Enter 键直接执行主操作，Shift+Enter 保留换行)
         document.addEventListener('keydown', function(e) {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            if (e.key === 'Enter') {
+                // 如果按下了 Shift 键，则保留文本域原生的换行行为
+                if (e.shiftKey) return;
+
+                // 如果处于图片大图对比弹窗中，不触发背景主操作
+                const modal = document.getElementById('imagePreviewModal');
+                if (modal && modal.classList.contains('show')) {
+                    return;
+                }
+
                 e.preventDefault();
                 switch (currentTool) {
                     case 'xml': decodeXML(); break;
@@ -2046,13 +2588,14 @@
                     case 'amount': convertAmount(); break;
                     case 'image': startImageCompression(); break;
                     case 'sm2': handleSm2Decrypt(); break;
+                    case 'ddl': generateCodeFromDDL(); break;
                 }
             }
         });
 
         // 页面初始化
         document.addEventListener('DOMContentLoaded', function() {
-            ['xml', 'json', 'case', 'amount', 'sm2'].forEach(tool => {
+            ['xml', 'json', 'case', 'amount', 'sm2', 'ddl'].forEach(tool => {
                 const inputEl = document.getElementById(tool + 'Input');
                 const outputEl = document.getElementById(tool + 'Output');
                 
@@ -2221,10 +2764,323 @@
             return formatted.replace(/\n\s*\n/g, '\n').trim();
         }
 
-        // JSON 格式化
+        // ===== JSON 树状折叠渲染与格式化逻辑 =====
+        let currentJsonParsed = null;
+        let currentJsonViewMode = 'tree';
+
+        // 切换 JSON 输出视图模式：树视图 / 纯文本
+        function switchJsonView(mode) {
+            currentJsonViewMode = mode;
+            const treeViewer = document.getElementById('jsonTreeViewer');
+            const textView = document.getElementById('jsonOutput');
+            const btnTree = document.getElementById('btnJsonViewTree');
+            const btnText = document.getElementById('btnJsonViewText');
+            const btnExpandAll = document.getElementById('btnJsonExpandAll');
+            const btnCollapseAll = document.getElementById('btnJsonCollapseAll');
+
+            if (mode === 'tree') {
+                if (btnTree) btnTree.classList.add('active');
+                if (btnText) btnText.classList.remove('active');
+                if (treeViewer) treeViewer.style.display = 'block';
+                if (textView) textView.style.display = 'none';
+                if (btnExpandAll) btnExpandAll.style.display = 'inline-flex';
+                if (btnCollapseAll) btnCollapseAll.style.display = 'inline-flex';
+            } else {
+                if (btnTree) btnTree.classList.remove('active');
+                if (btnText) btnText.classList.add('active');
+                if (treeViewer) treeViewer.style.display = 'none';
+                if (textView) textView.style.display = 'block';
+                if (btnExpandAll) btnExpandAll.style.display = 'none';
+                if (btnCollapseAll) btnCollapseAll.style.display = 'none';
+            }
+        }
+
+        // 重置 JSON 树视图占位状态
+        function resetJsonTree() {
+            currentJsonParsed = null;
+            const treeViewer = document.getElementById('jsonTreeViewer');
+            if (treeViewer) {
+                treeViewer.innerHTML = `
+                    <div class="json-tree-placeholder">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="15" y2="17"></line></svg>
+                        <span>格式化后的 JSON 将在此呈现，支持 {} 与 [] 逐级展开/收起</span>
+                    </div>
+                `;
+            }
+        }
+
+        // 切换单个复合节点折叠/展开
+        function toggleJsonCollapse(nodeEl) {
+            if (!nodeEl) return;
+            const isCollapsed = nodeEl.classList.toggle('collapsed');
+            nodeEl.setAttribute('data-expanded', isCollapsed ? 'false' : 'true');
+        }
+
+        // 全局展开或收起所有层级
+        function expandAllJsonTree(expand = true) {
+            const nodes = document.querySelectorAll('#jsonTreeViewer .json-collapsible');
+            if (!nodes.length) {
+                showToast('暂无格式化后的 JSON 结构', 'info');
+                return;
+            }
+            nodes.forEach(node => {
+                if (expand) {
+                    node.classList.remove('collapsed');
+                    node.setAttribute('data-expanded', 'true');
+                } else {
+                    node.classList.add('collapsed');
+                    node.setAttribute('data-expanded', 'false');
+                }
+            });
+            showToast(expand ? '已全部展开' : '已全部收起', 'info');
+        }
+
+        // 创建单一 JSON DOM 节点（递归构建）
+        function createJsonDomNode(val, key, isLast, isRoot) {
+            const itemEl = document.createElement('div');
+            itemEl.className = 'json-item';
+
+            const type = val === null ? 'null' : Array.isArray(val) ? 'array' : typeof val;
+
+            if (type === 'object' || type === 'array') {
+                const isArray = type === 'array';
+                const count = isArray ? val.length : Object.keys(val).length;
+                const openChar = isArray ? '[' : '{';
+                const closeChar = isArray ? ']' : '}';
+
+                // 空对象或空数组
+                if (count === 0) {
+                    const line = document.createElement('div');
+                    line.className = 'json-line';
+                    if (key !== null) {
+                        const kSpan = document.createElement('span');
+                        kSpan.className = 'json-key';
+                        kSpan.textContent = `"${key}": `;
+                        line.appendChild(kSpan);
+                    }
+                    const bSpan = document.createElement('span');
+                    bSpan.className = 'json-bracket';
+                    bSpan.textContent = `${openChar}${closeChar}`;
+                    line.appendChild(bSpan);
+                    if (!isLast && !isRoot) {
+                        const cSpan = document.createElement('span');
+                        cSpan.className = 'json-comma';
+                        cSpan.textContent = ',';
+                        line.appendChild(cSpan);
+                    }
+                    itemEl.appendChild(line);
+                    return itemEl;
+                }
+
+                // 带有子项的复合节点（支持折叠/展开）
+                itemEl.classList.add('json-collapsible');
+                itemEl.setAttribute('data-expanded', 'true');
+
+                // 首行：小箭头 + Key + 开括号 + 折叠缩略标签 + 折叠闭合符
+                const headLine = document.createElement('div');
+                headLine.className = 'json-line';
+
+                // 折叠切换箭头
+                const toggle = document.createElement('span');
+                toggle.className = 'json-toggle';
+                toggle.title = '点击折叠/展开';
+                toggle.innerHTML = `<svg viewBox="0 0 24 24"><polygon points="6 9 12 15 18 9"></polygon></svg>`;
+                toggle.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleJsonCollapse(itemEl);
+                };
+                headLine.appendChild(toggle);
+
+                // 属性键名
+                if (key !== null) {
+                    const kSpan = document.createElement('span');
+                    kSpan.className = 'json-key';
+                    kSpan.textContent = `"${key}": `;
+                    kSpan.onclick = () => toggleJsonCollapse(itemEl);
+                    headLine.appendChild(kSpan);
+                }
+
+                // 开括号
+                const openSpan = document.createElement('span');
+                openSpan.className = 'json-bracket json-open-bracket';
+                openSpan.textContent = openChar;
+                openSpan.onclick = () => toggleJsonCollapse(itemEl);
+                headLine.appendChild(openSpan);
+
+                // 折叠状态预览胶囊
+                const ellipsis = document.createElement('span');
+                ellipsis.className = 'json-ellipsis';
+                ellipsis.textContent = `... ${count} 项`;
+                ellipsis.title = '点击重新展开';
+                ellipsis.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleJsonCollapse(itemEl);
+                };
+                headLine.appendChild(ellipsis);
+
+                // 折叠状态时紧跟显示的闭合括号与逗号
+                const closedCollapseSpan = document.createElement('span');
+                closedCollapseSpan.className = 'json-bracket json-closed-bracket-collapsed';
+                closedCollapseSpan.textContent = closeChar;
+                closedCollapseSpan.onclick = () => toggleJsonCollapse(itemEl);
+                headLine.appendChild(closedCollapseSpan);
+
+                if (!isLast && !isRoot) {
+                    const commaCollapseSpan = document.createElement('span');
+                    commaCollapseSpan.className = 'json-comma json-comma-collapsed';
+                    commaCollapseSpan.textContent = ',';
+                    headLine.appendChild(commaCollapseSpan);
+                }
+
+                itemEl.appendChild(headLine);
+
+                // 子项容器（具备层级虚线指引）
+                const bodyEl = document.createElement('div');
+                bodyEl.className = 'json-body';
+
+                if (isArray) {
+                    val.forEach((subItem, idx) => {
+                        bodyEl.appendChild(createJsonDomNode(subItem, null, idx === val.length - 1, false));
+                    });
+                } else {
+                    const objKeys = Object.keys(val);
+                    objKeys.forEach((k, idx) => {
+                        bodyEl.appendChild(createJsonDomNode(val[k], k, idx === objKeys.length - 1, false));
+                    });
+                }
+                itemEl.appendChild(bodyEl);
+
+                // 展开时的尾部闭合括号行
+                const footEl = document.createElement('div');
+                footEl.className = 'json-foot json-line';
+                const closeSpan = document.createElement('span');
+                closeSpan.className = 'json-bracket';
+                closeSpan.textContent = closeChar;
+                closeSpan.onclick = () => toggleJsonCollapse(itemEl);
+                footEl.appendChild(closeSpan);
+
+                if (!isLast && !isRoot) {
+                    const cSpan = document.createElement('span');
+                    cSpan.className = 'json-comma';
+                    cSpan.textContent = ',';
+                    footEl.appendChild(cSpan);
+                }
+                itemEl.appendChild(footEl);
+
+                return itemEl;
+            } else {
+                // 基本类型单一节点
+                const line = document.createElement('div');
+                line.className = 'json-line json-primitive';
+
+                if (key !== null) {
+                    const kSpan = document.createElement('span');
+                    kSpan.className = 'json-key';
+                    kSpan.textContent = `"${key}": `;
+                    line.appendChild(kSpan);
+                }
+
+                const valSpan = document.createElement('span');
+                valSpan.className = `json-val json-val-${type}`;
+                if (type === 'string') {
+                    valSpan.textContent = JSON.stringify(val);
+                } else {
+                    valSpan.textContent = String(val);
+                }
+                line.appendChild(valSpan);
+
+                if (!isLast && !isRoot) {
+                    const cSpan = document.createElement('span');
+                    cSpan.className = 'json-comma';
+                    cSpan.textContent = ',';
+                    line.appendChild(cSpan);
+                }
+
+                itemEl.appendChild(line);
+                return itemEl;
+            }
+        }
+
+        // 渲染完整 JSON 树
+        function renderJsonTree(data, container) {
+            if (!container) return;
+            container.innerHTML = '';
+            const rootNode = createJsonDomNode(data, null, false, true);
+            container.appendChild(rootNode);
+        }
+
+        // 递归智能解开 String 类型的 JSON（支持多重嵌套解析）
+        function deepParseJsonStrings(val) {
+            if (typeof val === 'string') {
+                const trimmed = val.trim();
+                // 只有看起来像 JSON 对象或数组时才尝试解析
+                if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+                    try {
+                        const parsed = JSON.parse(trimmed);
+                        return deepParseJsonStrings(parsed);
+                    } catch (e) {
+                        // 如果带有多重转义 \" 导致解析失败，尝试解一次转义再解析
+                        if (trimmed.includes('\\"')) {
+                            try {
+                                const unescaped = trimmed.replace(/\\\\/g, '\\').replace(/\\"/g, '"');
+                                const parsed = JSON.parse(unescaped);
+                                return deepParseJsonStrings(parsed);
+                            } catch (e2) {
+                                return val;
+                            }
+                        }
+                        return val;
+                    }
+                }
+                return val;
+            } else if (Array.isArray(val)) {
+                return val.map(item => deepParseJsonStrings(item));
+            } else if (val !== null && typeof val === 'object') {
+                const res = {};
+                for (const k of Object.keys(val)) {
+                    res[k] = deepParseJsonStrings(val[k]);
+                }
+                return res;
+            }
+            return val;
+        }
+
+        // 智能初次解析，支持外层被双引号包裹或带 \" 转义的字符串
+        function smartParseJson(input) {
+            if (!input || typeof input !== 'string') return input;
+            let text = input.trim();
+
+            let current;
+            try {
+                current = JSON.parse(text);
+            } catch (e) {
+                // 如果直接 parse 失败，检查是否未带外层引号但带了 \" 转义
+                if (text.includes('\\"')) {
+                    try {
+                        const unescaped = text.replace(/\\\\/g, '\\').replace(/\\"/g, '"');
+                        current = JSON.parse(unescaped);
+                    } catch (e2) {
+                        throw e;
+                    }
+                } else {
+                    throw e;
+                }
+            }
+
+            const autoUnescapeEl = document.getElementById('jsonAutoUnescape');
+            const shouldDeepParse = autoUnescapeEl ? autoUnescapeEl.checked : true;
+
+            if (shouldDeepParse) {
+                return deepParseJsonStrings(current);
+            }
+            return current;
+        }
+
+        // JSON 格式化美化（支持展开/收起及 String JSON 智能解包）
         function formatJSON() {
             const input = document.getElementById('jsonInput').value;
             const output = document.getElementById('jsonOutput');
+            const treeViewer = document.getElementById('jsonTreeViewer');
 
             if (!input.trim()) {
                 showToast('请输入 JSON 文本', 'warning');
@@ -2232,11 +3088,14 @@
             }
 
             try {
-                const parsed = JSON.parse(input);
+                const parsed = smartParseJson(input);
+                currentJsonParsed = parsed;
                 output.value = JSON.stringify(parsed, null, 2);
+                renderJsonTree(parsed, treeViewer);
+                switchJsonView('tree');
                 updateStats('json');
-                showToast('JSON 格式化成功', 'success');
-                document.getElementById('jsonStatus').textContent = '有效 JSON';
+                showToast('JSON 格式化成功，已智能解析 String 嵌套 JSON', 'success');
+                document.getElementById('jsonStatus').textContent = '有效 JSON (已深度解析)';
             } catch (err) {
                 showToast('JSON 解析错误：' + err.message, 'error');
                 document.getElementById('jsonStatus').textContent = '语法错误';
@@ -2247,6 +3106,7 @@
         function compressJSON() {
             const input = document.getElementById('jsonInput').value;
             const output = document.getElementById('jsonOutput');
+            const treeViewer = document.getElementById('jsonTreeViewer');
 
             if (!input.trim()) {
                 showToast('请输入 JSON 文本', 'warning');
@@ -2254,13 +3114,18 @@
             }
 
             try {
-                const parsed = JSON.parse(input);
-                output.value = JSON.stringify(parsed);
+                const parsed = smartParseJson(input);
+                currentJsonParsed = parsed;
+                const compressed = JSON.stringify(parsed);
+                output.value = compressed;
+                renderJsonTree(parsed, treeViewer);
+                switchJsonView('text');
                 updateStats('json');
                 showToast('JSON 单行压缩完成', 'success');
-                document.getElementById('jsonStatus').textContent = '已压缩';
+                document.getElementById('jsonStatus').textContent = '已单行压缩';
             } catch (err) {
                 showToast('JSON 格式错误：' + err.message, 'error');
+                document.getElementById('jsonStatus').textContent = '语法错误';
             }
         }
 
@@ -2414,6 +3279,14 @@
             const outputEl = document.getElementById(tool + 'Output');
             if (inputEl) inputEl.value = '';
             if (outputEl) outputEl.value = '';
+            if (tool === 'json') {
+                resetJsonTree();
+                const statusEl = document.getElementById('jsonStatus');
+                if (statusEl) statusEl.textContent = '等待输入';
+            }
+            if (tool === 'ddl') {
+                resetDdlTool();
+            }
             updateStats(tool);
             showToast('已清空当前工作区内容', 'info');
         }
@@ -2431,12 +3304,34 @@
                 case 'amount':
                     sample = `1285400.68`;
                     break;
+                case 'ddl':
+                    sample = `CREATE TABLE \`sys_user\` (
+  \`id\` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  \`username\` varchar(64) NOT NULL COMMENT '用户账号',
+  \`nickname\` varchar(64) DEFAULT NULL COMMENT '用户昵称',
+  \`password\` varchar(128) NOT NULL COMMENT '登录密码',
+  \`email\` varchar(128) DEFAULT NULL COMMENT '电子邮箱',
+  \`phone\` varchar(32) DEFAULT NULL COMMENT '联系手机',
+  \`gender\` tinyint(2) DEFAULT 0 COMMENT '用户性别: 0未知 1男 2女',
+  \`avatar\` varchar(255) DEFAULT NULL COMMENT '头像地址',
+  \`balance\` decimal(10,2) DEFAULT '0.00' COMMENT '账户余额',
+  \`status\` tinyint(1) DEFAULT 1 COMMENT '帐号状态: 0停用 1正常',
+  \`remark\` text DEFAULT NULL COMMENT '备注说明',
+  \`create_time\` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  \`update_time\` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (\`id\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统用户信息表';`;
+                    break;
             }
 
             if (sample) {
                 document.getElementById(tool + 'Input').value = sample;
                 updateStats(tool);
-                showToast('已载入测试示例数据', 'info');
+                if (tool === 'ddl') {
+                    generateCodeFromDDL();
+                } else {
+                    showToast('已载入测试示例数据', 'info');
+                }
             }
         }
 
@@ -3120,6 +4015,613 @@
             const statusEl = document.getElementById('sm2StatusText');
             if (statusEl) statusEl.textContent = '等待执行';
             showToast('已清空待处理文本与结果', 'info');
+        }
+
+        // ================= DDL 逆向代码生成器逻辑 =================
+        let currentDdlTab = 'entity';
+        let generatedDdlFiles = {
+            entity: { name: 'Entity.java', code: '' },
+            mapper: { name: 'Mapper.java', code: '' },
+            service: { name: 'Service.java', code: '' },
+            serviceImpl: { name: 'ServiceImpl.java', code: '' }
+        };
+        let currentDdlTableInfo = null;
+
+        // 下划线转大驼峰
+        function toUpperCamel(str) {
+            if (!str) return '';
+            return str.replace(/^[_\s]+|[_\s]+$/g, '')
+                      .split(/[_\s]+/)
+                      .filter(Boolean)
+                      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                      .join('');
+        }
+
+        // 下划线转小驼峰
+        function toLowerCamel(str) {
+            const camel = toUpperCamel(str);
+            if (!camel) return '';
+            return camel.charAt(0).toLowerCase() + camel.slice(1);
+        }
+
+        // 切换 DDL 输出文件标签
+        function switchDdlFileTab(tabKey) {
+            currentDdlTab = tabKey;
+            document.querySelectorAll('#ddlFileTabs .file-tab-item').forEach(btn => {
+                if (btn.getAttribute('data-tab') === tabKey) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            const file = generatedDdlFiles[tabKey];
+            const output = document.getElementById('ddlOutput');
+            if (output) {
+                output.value = file ? file.code : '';
+                updateStats('ddl');
+            }
+        }
+
+        // SQL 类型映射到 Java 类型
+        function mapSqlTypeToJava(sqlType) {
+            const type = sqlType.toLowerCase();
+            if (type.startsWith('bigint')) return 'Long';
+            if (type.startsWith('int') || type.startsWith('integer') || type.startsWith('mediumint') || type.startsWith('smallint')) return 'Integer';
+            if (type.startsWith('tinyint(1)')) return 'Integer';
+            if (type.startsWith('tinyint')) return 'Integer';
+            if (type.startsWith('decimal') || type.startsWith('numeric')) return 'BigDecimal';
+            if (type.startsWith('datetime') || type.startsWith('timestamp')) return 'LocalDateTime';
+            if (type.startsWith('date')) return 'LocalDate';
+            if (type.startsWith('time')) return 'LocalTime';
+            if (type.startsWith('double') || type.startsWith('real')) return 'Double';
+            if (type.startsWith('float')) return 'Float';
+            if (type.startsWith('bit') || type.startsWith('boolean')) return 'Boolean';
+            if (type.startsWith('blob') || type.startsWith('binary') || type.startsWith('varbinary')) return 'byte[]';
+            return 'String';
+        }
+
+        // 解析建表 DDL
+        function parseDDL(sql, prefixes) {
+            if (!sql || !sql.trim()) return null;
+
+            // 移除块级注释与单行注释
+            let cleanSql = sql.replace(/\/\*[\s\S]*?\*\//g, '')
+                              .replace(/--.*$/gm, '')
+                              .replace(/#.*$/gm, '')
+                              .trim();
+
+            // 提取表名
+            const tableMatch = cleanSql.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:[`'"]?(\w+)[`'"]?\.)?[`'"]?(\w+)[`'"]?/i);
+            if (!tableMatch) {
+                throw new Error('未识别到有效的 CREATE TABLE 建表语句');
+            }
+            const rawTableName = tableMatch[2] || tableMatch[1];
+
+            // 提取表注释
+            let tableComment = '';
+            const commentMatch = cleanSql.match(/(?:ENGINE\s*=\s*\w+[\s\S]*?)?COMMENT\s*=\s*['"](.*?)['"]/i);
+            if (commentMatch && commentMatch[1]) {
+                tableComment = commentMatch[1].trim();
+            }
+
+            // 过滤前缀计算 Java 实体类名
+            let entityBaseName = rawTableName;
+            if (prefixes) {
+                const prefixList = prefixes.split(',').map(p => p.trim()).filter(Boolean);
+                for (const p of prefixList) {
+                    if (entityBaseName.toLowerCase().startsWith(p.toLowerCase())) {
+                        entityBaseName = entityBaseName.substring(p.length);
+                        break;
+                    }
+                }
+            }
+            const className = toUpperCamel(entityBaseName) || toUpperCamel(rawTableName) || 'Entity';
+
+            // 提取括号内部字段定义
+            const startIdx = cleanSql.indexOf('(');
+            const endIdx = cleanSql.lastIndexOf(')');
+            if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) {
+                throw new Error('建表 SQL 括号结构不完整');
+            }
+            const bodyContent = cleanSql.substring(startIdx + 1, endIdx);
+
+            // 分割行
+            const lines = bodyContent.split('\n')
+                .map(l => l.trim().replace(/,$/, ''))
+                .filter(Boolean);
+
+            let primaryKeyColumn = null;
+            const columns = [];
+
+            // 检查表级别的 PRIMARY KEY (`id`)
+            for (const line of lines) {
+                const pkMatch = line.match(/^PRIMARY\s+KEY\s*\((?:[`'"]?(\w+)[`'"]?)\)/i);
+                if (pkMatch && pkMatch[1]) {
+                    primaryKeyColumn = pkMatch[1];
+                }
+            }
+
+            for (const line of lines) {
+                // 跳过各种索引定义
+                if (/^(PRIMARY\s+KEY|KEY|INDEX|UNIQUE\s+KEY|UNIQUE\s+INDEX|CONSTRAINT|FULLTEXT|SPATIAL|FOREIGN\s+KEY)\b/i.test(line)) {
+                    continue;
+                }
+
+                // 提取字段名与类型
+                const colMatch = line.match(/^[`'"]?(\w+)[`'"]?\s+([a-zA-Z]+(?:\s*\([^)]*\))?)/i);
+                if (!colMatch) continue;
+
+                const colName = colMatch[1];
+                const rawType = colMatch[2].toLowerCase();
+
+                // 字段行内主键
+                let isPk = false;
+                if (/PRIMARY\s+KEY/i.test(line) || colName.toLowerCase() === (primaryKeyColumn || '').toLowerCase()) {
+                    isPk = true;
+                    primaryKeyColumn = colName;
+                }
+
+                // 是否自增
+                const isAutoIncrement = /AUTO_INCREMENT/i.test(line);
+
+                // 是否非空
+                const isNotNull = /NOT\s+NULL/i.test(line);
+
+                // 字段注释
+                let colComment = '';
+                const cMatch = line.match(/COMMENT\s+['"](.*?)['"]/i);
+                if (cMatch && cMatch[1]) {
+                    colComment = cMatch[1].trim();
+                }
+
+                // 转换 Java 属性类型与属性名
+                const javaType = mapSqlTypeToJava(rawType);
+                const fieldName = toLowerCamel(colName);
+
+                columns.push({
+                    columnName: colName,
+                    fieldName: fieldName,
+                    rawType: rawType,
+                    javaType: javaType,
+                    comment: colComment,
+                    isPk: isPk,
+                    isAutoIncrement: isAutoIncrement,
+                    isNotNull: isNotNull
+                });
+            }
+
+            if (!columns.length) {
+                throw new Error('未解析到有效的表字段定义');
+            }
+
+            return {
+                tableName: rawTableName,
+                tableComment: tableComment || `${className} 表`,
+                className: className,
+                columns: columns,
+                primaryKey: primaryKeyColumn || (columns[0] ? columns[0].columnName : 'id')
+            };
+        }
+
+        // 生成 Entity.java
+        function renderEntityCode(info, opts) {
+            const hasBigDecimal = info.columns.some(c => c.javaType === 'BigDecimal');
+            const hasLocalDateTime = info.columns.some(c => c.javaType === 'LocalDateTime');
+            const hasLocalDate = info.columns.some(c => c.javaType === 'LocalDate');
+            const hasLocalTime = info.columns.some(c => c.javaType === 'LocalTime');
+            const isMp = opts.framework === 'mybatis-plus';
+
+            let imports = [];
+            if (opts.serializable) imports.push('import java.io.Serializable;');
+            if (hasBigDecimal) imports.push('import java.math.BigDecimal;');
+            if (hasLocalDateTime) imports.push('import java.time.LocalDateTime;');
+            if (hasLocalDate) imports.push('import java.time.LocalDate;');
+            if (hasLocalTime) imports.push('import java.time.LocalTime;');
+
+            if (isMp) {
+                imports.push('import com.baomidou.mybatisplus.annotation.IdType;');
+                imports.push('import com.baomidou.mybatisplus.annotation.TableId;');
+                imports.push('import com.baomidou.mybatisplus.annotation.TableField;');
+                imports.push('import com.baomidou.mybatisplus.annotation.TableName;');
+            }
+
+            if (opts.lombok) {
+                imports.push('import lombok.Data;');
+                imports.push('import lombok.NoArgsConstructor;');
+                imports.push('import lombok.AllArgsConstructor;');
+                imports.push('import lombok.Builder;');
+            }
+
+            let classAnnotations = [];
+            if (opts.lombok) {
+                classAnnotations.push('@Data');
+                classAnnotations.push('@Builder');
+                classAnnotations.push('@NoArgsConstructor');
+                classAnnotations.push('@AllArgsConstructor');
+            }
+            if (isMp) {
+                classAnnotations.push(`@TableName("${info.tableName}")`);
+            }
+
+            const implementsClause = opts.serializable ? ' implements Serializable' : '';
+
+            let fieldLines = [];
+            if (opts.serializable) {
+                fieldLines.push('    private static final long serialVersionUID = 1L;\n');
+            }
+
+            info.columns.forEach(col => {
+                if (opts.swagger && col.comment) {
+                    fieldLines.push(`    /**\n     * ${col.comment}\n     */`);
+                }
+                if (isMp && col.isPk) {
+                    const idType = col.isAutoIncrement ? 'IdType.AUTO' : 'IdType.ASSIGN_ID';
+                    fieldLines.push(`    @TableId(value = "${col.columnName}", type = ${idType})`);
+                } else if (isMp) {
+                    fieldLines.push(`    @TableField("${col.columnName}")`);
+                }
+                fieldLines.push(`    private ${col.javaType} ${col.fieldName};\n`);
+            });
+
+            // 如果不使用 Lombok，生成 Getter / Setter
+            let getterSetters = [];
+            if (!opts.lombok) {
+                info.columns.forEach(col => {
+                    const capName = col.fieldName.charAt(0).toUpperCase() + col.fieldName.slice(1);
+                    getterSetters.push(`    public ${col.javaType} get${capName}() {`);
+                    getterSetters.push(`        return this.${col.fieldName};`);
+                    getterSetters.push(`    }\n`);
+                    getterSetters.push(`    public void set${capName}(${col.javaType} ${col.fieldName}) {`);
+                    getterSetters.push(`        this.${col.fieldName} = ${col.fieldName};`);
+                    getterSetters.push(`    }\n`);
+                });
+            }
+
+            return `package ${opts.pkg}.entity;\n\n` +
+                   (imports.length ? imports.join('\n') + '\n\n' : '') +
+`/**
+ * ${info.tableComment} 实体类
+ *
+ * @author ${opts.author}
+ * @date ${new Date().toISOString().split('T')[0]}
+ */
+${classAnnotations.join('\n')}
+public class ${info.className}${implementsClause} {
+
+${fieldLines.join('\n')}
+${getterSetters.join('\n')}
+}
+`.trim() + '\n';
+        }
+
+        // 生成 Mapper.java
+        function renderMapperCode(info, opts) {
+            const isMp = opts.framework === 'mybatis-plus';
+            let imports = [
+                `import ${opts.pkg}.entity.${info.className};`,
+                'import org.apache.ibatis.annotations.Mapper;'
+            ];
+
+            if (isMp) {
+                imports.unshift('import com.baomidou.mybatisplus.core.mapper.BaseMapper;');
+            } else {
+                imports.push('import org.apache.ibatis.annotations.Param;');
+                imports.push('import java.util.List;');
+            }
+
+            let methods = '';
+            let extendsClause = '';
+
+            if (isMp) {
+                extendsClause = ` extends BaseMapper<${info.className}>`;
+            } else {
+                const pkCol = info.columns.find(c => c.isPk) || info.columns[0];
+                const pkType = pkCol ? pkCol.javaType : 'Long';
+                methods = `
+    /**
+     * 根据主键查询
+     */
+    ${info.className} selectById(@Param("id") ${pkType} id);
+
+    /**
+     * 插入新记录
+     */
+    int insert(${info.className} record);
+
+    /**
+     * 根据主键更新
+     */
+    int updateById(${info.className} record);
+
+    /**
+     * 根据主键删除
+     */
+    int deleteById(@Param("id") ${pkType} id);
+
+    /**
+     * 查询所有列表
+     */
+    List<${info.className}> selectAll();
+`;
+            }
+
+            return `package ${opts.pkg}.mapper;\n\n` +
+                   imports.join('\n') + '\n\n' +
+`/**
+ * ${info.tableComment} 数据访问层 Mapper 接口
+ *
+ * @author ${opts.author}
+ * @date ${new Date().toISOString().split('T')[0]}
+ */
+@Mapper
+public interface ${info.className}Mapper${extendsClause} {
+${methods}}
+`.trim() + '\n';
+        }
+
+        // 生成 Service.java
+        function renderServiceCode(info, opts) {
+            const isMp = opts.framework === 'mybatis-plus';
+            let imports = [
+                `import ${opts.pkg}.entity.${info.className};`
+            ];
+
+            let extendsClause = '';
+            let methods = '';
+
+            if (isMp) {
+                imports.unshift('import com.baomidou.mybatisplus.extension.service.IService;');
+                extendsClause = ` extends IService<${info.className}>`;
+            } else {
+                imports.push('import java.util.List;');
+                const pkCol = info.columns.find(c => c.isPk) || info.columns[0];
+                const pkType = pkCol ? pkCol.javaType : 'Long';
+                methods = `
+    /**
+     * 根据ID获取详情
+     */
+    ${info.className} getById(${pkType} id);
+
+    /**
+     * 新增保存
+     */
+    boolean save(${info.className} entity);
+
+    /**
+     * 更新数据
+     */
+    boolean updateById(${info.className} entity);
+
+    /**
+     * 根据ID删除
+     */
+    boolean removeById(${pkType} id);
+
+    /**
+     * 获取全部列表
+     */
+    List<${info.className}> list();
+`;
+            }
+
+            return `package ${opts.pkg}.service;\n\n` +
+                   imports.join('\n') + '\n\n' +
+`/**
+ * ${info.tableComment} 服务层接口
+ *
+ * @author ${opts.author}
+ * @date ${new Date().toISOString().split('T')[0]}
+ */
+public interface ${info.className}Service${extendsClause} {
+${methods}}
+`.trim() + '\n';
+        }
+
+        // 生成 ServiceImpl.java
+        function renderServiceImplCode(info, opts) {
+            const isMp = opts.framework === 'mybatis-plus';
+            let imports = [
+                `import ${opts.pkg}.entity.${info.className};`,
+                `import ${opts.pkg}.mapper.${info.className}Mapper;`,
+                `import ${opts.pkg}.service.${info.className}Service;`,
+                'import org.springframework.stereotype.Service;'
+            ];
+
+            let extendsClause = '';
+            let classBody = '';
+
+            if (isMp) {
+                imports.unshift('import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;');
+                extendsClause = ` extends ServiceImpl<${info.className}Mapper, ${info.className}>`;
+            } else {
+                imports.push('import org.springframework.beans.factory.annotation.Autowired;');
+                imports.push('import java.util.List;');
+                const pkCol = info.columns.find(c => c.isPk) || info.columns[0];
+                const pkType = pkCol ? pkCol.javaType : 'Long';
+                classBody = `
+    @Autowired
+    private ${info.className}Mapper ${toLowerCamel(info.className)}Mapper;
+
+    @Override
+    public ${info.className} getById(${pkType} id) {
+        return ${toLowerCamel(info.className)}Mapper.selectById(id);
+    }
+
+    @Override
+    public boolean save(${info.className} entity) {
+        return ${toLowerCamel(info.className)}Mapper.insert(entity) > 0;
+    }
+
+    @Override
+    public boolean updateById(${info.className} entity) {
+        return ${toLowerCamel(info.className)}Mapper.updateById(entity) > 0;
+    }
+
+    @Override
+    public boolean removeById(${pkType} id) {
+        return ${toLowerCamel(info.className)}Mapper.deleteById(id) > 0;
+    }
+
+    @Override
+    public List<${info.className}> list() {
+        return ${toLowerCamel(info.className)}Mapper.selectAll();
+    }
+`;
+            }
+
+            return `package ${opts.pkg}.service.impl;\n\n` +
+                   imports.join('\n') + '\n\n' +
+`/**
+ * ${info.tableComment} 服务层实现类
+ *
+ * @author ${opts.author}
+ * @date ${new Date().toISOString().split('T')[0]}
+ */
+@Service
+public class ${info.className}ServiceImpl${extendsClause} implements ${info.className}Service {
+${classBody}}
+`.trim() + '\n';
+        }
+
+        // 主入口：生成代码
+        function generateCodeFromDDL() {
+            const input = document.getElementById('ddlInput').value;
+            if (!input.trim()) {
+                showToast('请输入建表 DDL (CREATE TABLE) 语句', 'warning');
+                return;
+            }
+
+            const options = {
+                pkg: document.getElementById('ddlPackage').value.trim() || 'com.example.system',
+                author: document.getElementById('ddlAuthor').value.trim() || 'Developer',
+                prefix: document.getElementById('ddlPrefix').value.trim(),
+                framework: document.getElementById('ddlFramework').value,
+                lombok: document.getElementById('ddlLombok').checked,
+                swagger: document.getElementById('ddlSwagger').checked,
+                serializable: document.getElementById('ddlSerializable').checked
+            };
+
+            try {
+                const tableInfo = parseDDL(input, options.prefix);
+                currentDdlTableInfo = tableInfo;
+
+                const entityCode = renderEntityCode(tableInfo, options);
+                const mapperCode = renderMapperCode(tableInfo, options);
+                const serviceCode = renderServiceCode(tableInfo, options);
+                const serviceImplCode = renderServiceImplCode(tableInfo, options);
+
+                generatedDdlFiles = {
+                    entity: { name: `${tableInfo.className}.java`, code: entityCode },
+                    mapper: { name: `${tableInfo.className}Mapper.java`, code: mapperCode },
+                    service: { name: `${tableInfo.className}Service.java`, code: serviceCode },
+                    serviceImpl: { name: `${tableInfo.className}ServiceImpl.java`, code: serviceImplCode }
+                };
+
+                // 更新 Tab 按钮标题
+                document.getElementById('tabLabelEntity').textContent = `${tableInfo.className}.java`;
+                document.getElementById('tabLabelMapper').textContent = `${tableInfo.className}Mapper.java`;
+                document.getElementById('tabLabelService').textContent = `${tableInfo.className}Service.java`;
+                document.getElementById('tabLabelServiceImpl').textContent = `${tableInfo.className}ServiceImpl.java`;
+
+                switchDdlFileTab(currentDdlTab || 'entity');
+                document.getElementById('ddlStatus').textContent = `成功生成 ${tableInfo.className} 全套架构代码`;
+                showToast(`已成功为表 [${tableInfo.tableName}] 生成 4 个 Java 代码文件！`, 'success');
+            } catch (err) {
+                showToast('DDL 解析失败：' + err.message, 'error');
+                document.getElementById('ddlStatus').textContent = '解析异常';
+            }
+        }
+
+        // 复制当前展示的代码文件
+        async function copyCurrentDdlFile() {
+            const currentFile = generatedDdlFiles[currentDdlTab];
+            if (!currentFile || !currentFile.code) {
+                showToast('暂无生成的代码可供复制，请先点击生成代码', 'warning');
+                return;
+            }
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(currentFile.code);
+                } else {
+                    const output = document.getElementById('ddlOutput');
+                    output.select();
+                    document.execCommand('copy');
+                }
+                showToast(`已复制 ${currentFile.name} 到剪贴板`, 'success');
+            } catch (err) {
+                showToast('复制失败：' + err.message, 'error');
+            }
+        }
+
+        // 下载当前展示的代码文件
+        function downloadCurrentDdlFile() {
+            const currentFile = generatedDdlFiles[currentDdlTab];
+            if (!currentFile || !currentFile.code) {
+                showToast('暂无生成的代码可供下载', 'warning');
+                return;
+            }
+            const blob = new Blob([currentFile.code], { type: 'text/plain;charset=utf-8' });
+            triggerBlobDownload(blob, currentFile.name);
+            showToast(`已开始下载 ${currentFile.name}`, 'success');
+        }
+
+        // 一键打包全部 4 个文件 (ZIP 下载，带优雅降级)
+        async function downloadAllDdlFiles() {
+            if (!generatedDdlFiles.entity.code) {
+                showToast('请先输入建表 DDL 并生成代码后再下载', 'warning');
+                return;
+            }
+
+            const pkg = document.getElementById('ddlPackage').value.trim() || 'com.example.system';
+            const tableClass = currentDdlTableInfo ? currentDdlTableInfo.className : 'Code';
+            const zipFileName = `${tableClass}_Sources.zip`;
+
+            if (typeof JSZip !== 'undefined') {
+                try {
+                    const zip = new JSZip();
+                    const basePath = pkg.replace(/\./g, '/');
+                    const rootFolder = zip.folder(basePath);
+
+                    rootFolder.folder('entity').file(generatedDdlFiles.entity.name, generatedDdlFiles.entity.code);
+                    rootFolder.folder('mapper').file(generatedDdlFiles.mapper.name, generatedDdlFiles.mapper.code);
+                    rootFolder.folder('service').file(generatedDdlFiles.service.name, generatedDdlFiles.service.code);
+                    rootFolder.folder('service/impl').file(generatedDdlFiles.serviceImpl.name, generatedDdlFiles.serviceImpl.code);
+
+                    const blobContent = await zip.generateAsync({ type: 'blob' });
+                    triggerBlobDownload(blobContent, zipFileName);
+                    showToast(`已成功打包并下载 ${zipFileName}！`, 'success');
+                    return;
+                } catch (e) {
+                    console.warn('JSZip error, fallback to multi download', e);
+                }
+            }
+
+            // Fallback: 依次触发 4 个单文件下载
+            showToast('正在依次下载 4 个 Java 代码文件...', 'info');
+            const files = Object.values(generatedDdlFiles);
+            files.forEach((file, index) => {
+                setTimeout(() => {
+                    const blob = new Blob([file.code], { type: 'text/plain;charset=utf-8' });
+                    triggerBlobDownload(blob, file.name);
+                }, index * 300);
+            });
+        }
+
+        // 重置 DDL 工作区
+        function resetDdlTool() {
+            currentDdlTableInfo = null;
+            generatedDdlFiles = {
+                entity: { name: 'Entity.java', code: '' },
+                mapper: { name: 'Mapper.java', code: '' },
+                service: { name: 'Service.java', code: '' },
+                serviceImpl: { name: 'ServiceImpl.java', code: '' }
+            };
+            document.getElementById('tabLabelEntity').textContent = 'Entity.java';
+            document.getElementById('tabLabelMapper').textContent = 'Mapper.java';
+            document.getElementById('tabLabelService').textContent = 'Service.java';
+            document.getElementById('tabLabelServiceImpl').textContent = 'ServiceImpl.java';
+            document.getElementById('ddlStatus').textContent = '等待生成';
+            switchDdlFileTab('entity');
         }
     </script>
 </body>
